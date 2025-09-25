@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Crear Nota de Devolución desde la Nota de Despacho #{{ dispatch_note.dispatch_number }}</h2>
+    <p>¿Estás seguro de que deseas crear una nota de devolución basada en esta nota de despacho?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Confirmar Creación</button>
+        <a href="{% url 'dispatch_notes:detail' dispatch_note.pk %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

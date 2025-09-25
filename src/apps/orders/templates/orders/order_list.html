@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Órdenes de Compra</h2>
+    <a href="{% url 'orders:create' %}" class="btn btn-primary mb-3">➕ Nueva Orden</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>N° de Orden</th>
+                <th>Cliente</th>
+                <th>Proveedor</th>
+                <th>Fecha</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>{{ order.order_number }}</td>
+                <td>{{ order.client.name }}</td>
+                <td>{{ order.supplier.name }}</td>
+                <td>{{ order.order_date|date:"d M Y" }}</td>
+                <td>${{ order.total|floatformat:2 }}</td>
+                <td>{{ order.get_status_display }}</td>
+                <td>
+                    <a href="{% url 'orders:detail' order.pk %}" class="btn btn-sm btn-info">Ver</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7">No hay órdenes registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

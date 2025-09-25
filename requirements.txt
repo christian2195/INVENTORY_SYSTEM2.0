@@ -1,0 +1,10 @@
+Django==4.2
+psycopg2-binary
+django-crispy-forms
+djangorestframework
+crispy-bootstrap5==0.7
+django-jazzmin
+weasyprint
+django-import-export==3.0.0
+django-humanize==0.1.2
+django-widget-tweaks

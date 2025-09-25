@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard de Inventario</h2>
+            <p class="text-muted mb-0">Resumen general del estado de tu inventario</p>
+        </div>
+        <div>
+            <a href="{% url 'inventory:inventory_report_pdf' %}" class="btn btn-danger">
+                <i class="fas fa-file-pdf me-1"></i> Reporte PDF
+            </a>
+            <a href="{% url 'inventory:list' %}" class="btn btn-primary">
+                <i class="fas fa-list me-1"></i> Ver Todos
+            </a>
+        </div>
+    </div>
+
+    <!-- Estadísticas Principales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">{{ total_products|intcomma }}</h5>
+                            <p class="card-text mb-0">Productos Totales</p>
+                        </div>
+                        <i class="fas fa-boxes fa-2x opacity-50"></i>
+                    </div>
+                    <small>Registrados en el sistema</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">{{ low_stock_products_count|intcomma }}</h5>
+                            <p class="card-text mb-0">Stock Bajo</p>
+                        </div>
+                        <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+                    </div>
+                    <small>Necesitan reabastecimiento</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">{{ out_of_stock_count|intcomma }}</h5>
+                            <p class="card-text mb-0">Sin Stock</p>
+                        </div>
+                        <i class="fas fa-times-circle fa-2x opacity-50"></i>
+                    </div>
+                    <small>Urgente reabastecimiento</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">${{ total_value|intcomma }}</h5>
+                            <p class="card-text mb-0">Valor Total</p>
+                        </div>
+                        <i class="fas fa-dollar-sign fa-2x opacity-50"></i>
+                    </div>
+                    <small>Valor del inventario</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Segunda Fila de Métricas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">{{ average_stock|intcomma }}</h5>
+                            <p class="card-text mb-0">Stock Promedio</p>
+                        </div>
+                        <i class="fas fa-chart-line fa-2x opacity-50"></i>
+                    </div>
+                    <small>Por producto</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">{{ categories_count|intcomma }}</h5>
+                            <p class="card-text mb-0">Categorías</p>
+                        </div>
+                        <i class="fas fa-tags fa-2x opacity-50"></i>
+                    </div>
+                    <small>Diferentes categorías</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-dark text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">{{ suppliers_count|intcomma }}</h5>
+                            <p class="card-text mb-0">Proveedores</p>
+                        </div>
+                        <i class="fas fa-truck fa-2x opacity-50"></i>
+                    </div>
+                    <small>Proveedores activos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-purple text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">{{ warehouses_count|intcomma }}</h5>
+                            <p class="card-text mb-0">Almacenes</p>
+                        </div>
+                        <i class="fas fa-warehouse fa-2x opacity-50"></i>
+                    </div>
+                    <small>Ubicaciones de almacenamiento</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Productos con Stock Bajo -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Productos con Stock Bajo
+                        <span class="badge bg-light text-warning ms-2">{{ low_stock_products.count }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if low_stock_products %}
+                    <div class="list-group">
+                        {% for product in low_stock_products|slice:":5" %}
+                        <div class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ product.description|truncatewords:5 }}</h6>
+                                    <small class="text-muted">Código: {{ product.product_code }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-warning">Stock: {{ product.current_stock }}</span>
+                                    <br>
+                                    <small>Mínimo: {{ product.min_stock }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if low_stock_products.count > 5 %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'inventory:list' %}?stock_status=low" class="btn btn-sm btn-outline-warning">
+                            Ver todos ({{ low_stock_products.count }})
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                        <p class="text-muted mb-0">¡Excelente! No hay productos con stock bajo</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Productos Sin Stock -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-times-circle me-2"></i>
+                        Productos Sin Stock
+                        <span class="badge bg-light text-danger ms-2">{{ out_of_stock_products.count }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if out_of_stock_products %}
+                    <div class="list-group">
+                        {% for product in out_of_stock_products|slice:":5" %}
+                        <div class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ product.description|truncatewords:5 }}</h6>
+                                    <small class="text-muted">Código: {{ product.product_code }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-danger">Stock: 0</span>
+                                    <br>
+                                    <small>Mínimo: {{ product.min_stock }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if out_of_stock_products.count > 5 %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'inventory:list' %}?stock_status=out" class="btn btn-sm btn-outline-danger">
+                            Ver todos ({{ out_of_stock_products.count }})
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                        <p class="text-muted mb-0">¡Perfecto! No hay productos sin stock</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Acciones Rápidas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center mb-3">
+                            <a href="{% url 'inventory:create' %}" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-plus me-2"></i>Nuevo Producto
+                            </a>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <a href="{% url 'inventory:list' %}" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-list me-2"></i>Ver Inventario
+                            </a>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <a href="{% url 'inventory:report' %}" class="btn btn-info btn-lg w-100">
+                                <i class="fas fa-chart-bar me-2"></i>Reportes
+                            </a>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <a href="{% url 'admin:index' %}" class="btn btn-secondary btn-lg w-100">
+                                <i class="fas fa-cog me-2"></i>Administración
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+        transition: transform 0.2s ease-in-out;
+    }
+    .card:hover {
+        transform: translateY(-2px);
+    }
+    .bg-purple {
+        background-color: #6f42c1 !important;
+    }
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+    .badge {
+        font-size: 0.75em;
+    }
+</style>
+{% endblock %}

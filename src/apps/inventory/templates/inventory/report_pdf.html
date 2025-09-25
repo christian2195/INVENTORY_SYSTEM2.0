@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Reporte de Inventario</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #333; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .low-stock { background-color: #ffcccc; }
+    </style>
+</head>
+<body>
+    <h1>Reporte de Inventario</h1>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th>Stock Actual</th>
+                <th>Stock Mínimo</th>
+                <th>Precio Unitario</th>
+                <th>Ubicación</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr class="{% if product.current_stock <= product.min_stock %}low-stock{% endif %}">
+                <td>{{ product.product_code }}</td>
+                <td>{{ product.description }}</td>
+                <td>{{ product.current_stock }}</td>
+                <td>{{ product.min_stock }}</td>
+                <td>${{ product.unit_price }}</td>
+                <td>{{ product.location }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

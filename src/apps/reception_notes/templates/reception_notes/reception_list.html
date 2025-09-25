@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Notas de Recepción</h2>
+    <a href="{% url 'reception_notes:create' %}" class="btn btn-primary mb-3">➕ Nueva Nota de Recepción</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Proveedor</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reception in receptions %}
+            <tr>
+                <td>{{ reception.reception_number }}</td>
+                <td>{{ reception.supplier.name }}</td>
+                <td>{{ reception.reception_date|date:"d M Y" }}</td>
+                <td>{{ reception.get_status_display }}</td>
+                <td>
+                    <a href="{% url 'reception_notes:detail' reception.pk %}" class="btn btn-sm btn-info">Ver</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">No hay notas de recepción registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

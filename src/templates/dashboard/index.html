@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container mx-auto p-6 space-y-8 bg-gray-50 min-h-screen">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+        <h1 class="text-4xl font-extrabold text-green-800 mb-4 md:mb-0">Panel de Control</h1>
+        <div class="relative w-full md:w-1/2 lg:w-1/3">
+            <input type="text" id="product-search" placeholder="🔍 Buscar producto..." class="w-full px-4 py-3 rounded-full border border-gray-300 shadow-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
+            <ul id="product-results" class="product-results list-group hidden mt-2 absolute w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                <!-- Los resultados de la búsqueda se renderizarán aquí -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- Sección de Búsqueda de Productos -->
+    <div id="product-details-card" class="hidden bg-white rounded-xl shadow-lg p-6 border-t-4 border-blue-600 transition-transform duration-300 transform scale-100 opacity-100">
+        <h2 class="text-2xl font-semibold text-blue-800 mb-4">Información del Producto</h2>
+        <div id="product-details-content" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Los detalles del producto seleccionado se mostrarán aquí -->
+        </div>
+        <button id="close-details-btn" class="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-colors duration-300">Cerrar</button>
+    </div>
+
+    <!-- Tarjetas de Estadísticas Principales -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-center text-center transition-transform duration-300 hover:scale-105 border-t-4 border-green-500">
+            <i class="fas fa-box text-4xl text-green-600 mb-3"></i>
+            <h3 class="text-xl font-semibold text-gray-700">Total de Productos</h3>
+            <p class="text-3xl font-bold text-gray-900">{{ total_products|intcomma }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-center text-center transition-transform duration-300 hover:scale-105 border-t-4 border-red-500">
+            <i class="fas fa-exclamation-triangle text-4xl text-red-600 mb-3"></i>
+            <h3 class="text-xl font-semibold text-gray-700">Stock Crítico</h3>
+            <p class="text-3xl font-bold text-gray-900">{{ critical_stock|intcomma }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-center text-center transition-transform duration-300 hover:scale-105 border-t-4 border-blue-500">
+            <i class="fas fa-arrow-alt-circle-down text-4xl text-blue-600 mb-3"></i>
+            <h3 class="text-xl font-semibold text-gray-700">Entradas del Día</h3>
+            <p class="text-3xl font-bold text-gray-900">{{ today_entries|intcomma }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-center text-center transition-transform duration-300 hover:scale-105 border-t-4 border-yellow-500">
+            <i class="fas fa-arrow-alt-circle-up text-4xl text-yellow-600 mb-3"></i>
+            <h3 class="text-xl font-semibold text-gray-700">Salidas del Día</h3>
+            <p class="text-3xl font-bold text-gray-900">{{ today_exits|intcomma }}</p>
+        </div>
+    </div>
+
+    <!-- Sección de Productos con Stock Crítico -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border-t-4 border-orange-500">
+        <h2 class="text-2xl font-semibold text-orange-800 mb-4">Productos con Stock Crítico</h2>
+        {% if low_stock_products %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Producto
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Código
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Stock Actual
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Stock Mínimo
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Acciones
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for product in low_stock_products %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ product.nombre }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ product.codigo }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-semibold">{{ product.cantidad }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ product.stock_minimo }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{% url 'dashboard:request_replenishment' product.pk %}" class="text-blue-600 hover:text-blue-900 transition-colors">Solicitar Reposición</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-4">¡No hay productos con stock crítico!</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.getElementById('product-search');
+        const resultsList = document.getElementById('product-results');
+        const detailsCard = document.getElementById('product-details-card');
+        const detailsContent = document.getElementById('product-details-content');
+        const closeBtn = document.getElementById('close-details-btn');
+
+        let debounceTimeout;
+
+        searchInput.addEventListener('input', () => {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                const query = searchInput.value;
+                if (query.length > 2) {
+                    fetch(`/dashboard/api/product-search/?query=${encodeURIComponent(query)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            renderResults(data);
+                        })
+                        .catch(error => {
+                            console.error('Error fetching products:', error);
+                        });
+                } else {
+                    resultsList.innerHTML = '';
+                    resultsList.classList.add('hidden');
+                }
+            }, 300);
+        });
+
+        const renderResults = (products) => {
+            resultsList.innerHTML = '';
+            if (products.length > 0) {
+                products.forEach(product => {
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('list-group-item', 'p-3', 'hover:bg-gray-100', 'cursor-pointer');
+                    listItem.innerHTML = `
+                        <p class="font-semibold text-gray-800">${product.nombre}</p>
+                        <p class="text-sm text-gray-500">Stock: ${product.cantidad} | Precio: Bs. ${product.precio_unitario}</p>
+                    `;
+                    listItem.addEventListener('click', () => {
+                        showProductDetails(product);
+                        resultsList.classList.add('hidden');
+                        searchInput.value = ''; // Limpiar el campo de búsqueda
+                    });
+                    resultsList.appendChild(listItem);
+                });
+                resultsList.classList.remove('hidden');
+            } else {
+                const noResultsItem = document.createElement('li');
+                noResultsItem.classList.add('list-group-item', 'p-3', 'text-gray-500');
+                noResultsItem.textContent = 'No se encontraron productos.';
+                resultsList.appendChild(noResultsItem);
+                resultsList.classList.remove('hidden');
+            }
+        };
+
+        const showProductDetails = (product) => {
+            detailsContent.innerHTML = `
+                <div>
+                    <h3 class="font-bold text-gray-700">Nombre</h3>
+                    <p class="text-gray-900">${product.nombre}</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-gray-700">Código</h3>
+                    <p class="text-gray-900">${product.codigo}</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-gray-700">Cantidad Disponible</h3>
+                    <p class="text-gray-900">${product.cantidad} ${product.unidad_medida_abreviatura}</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-gray-700">Precio Unitario</h3>
+                    <p class="text-gray-900">Bs. ${product.precio_unitario}</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-gray-700">Descripción</h3>
+                    <p class="text-gray-900">${product.descripcion || 'N/A'}</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-gray-700">Categoría</h3>
+                    <p class="text-gray-900">${product.categoria_nombre || 'N/A'}</p>
+                </div>
+            `;
+            detailsCard.classList.remove('hidden');
+        };
+
+        closeBtn.addEventListener('click', () => {
+            detailsCard.classList.add('hidden');
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!searchInput.contains(event.target) && !resultsList.contains(event.target)) {
+                resultsList.classList.add('hidden');
+            }
+        });
+    });
+</script>
+{% endblock %}

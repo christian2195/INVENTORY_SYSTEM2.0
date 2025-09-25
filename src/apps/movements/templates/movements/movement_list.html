@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-exchange-alt me-2"></i>Movimientos de Inventario</h2>
+            <p class="text-muted mb-0">Registro de entradas y salidas de productos</p>
+        </div>
+        <a href="{% url 'movements:create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Nuevo Movimiento
+        </a>
+    </div>
+
+    <!-- Estadísticas Rápidas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ total_movements|intcomma }}</h5>
+                    <p class="card-text">Total Movimientos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ entries_count|intcomma }}</h5>
+                    <p class="card-text">Entradas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ exits_count|intcomma }}</h5>
+                    <p class="card-text">Salidas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">${{ total_value|intcomma }}</h5>
+                    <p class="card-text">Valor Total</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros de Búsqueda -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" name="q" class="form-control" placeholder="Buscar producto..." 
+                           value="{{ request.GET.q }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="type" class="form-select">
+                        <option value="">Todos los tipos</option>
+                        <option value="entrada" {% if request.GET.type == 'entrada' %}selected{% endif %}>Entradas</option>
+                        <option value="salida" {% if request.GET.type == 'salida' %}selected{% endif %}>Salidas</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="start_date" class="form-control" value="{{ request.GET.start_date }}"
+                           placeholder="Desde">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="end_date" class="form-control" value="{{ request.GET.end_date }}"
+                           placeholder="Hasta">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Movimientos -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Historial de Movimientos</h5>
+            <span class="badge bg-secondary">{{ movements|length }} registros</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Producto</th>
+                            <th>Código</th>
+                            <th>Tipo</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unitario</th>
+                            <th>Valor Total</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for movement in movements %}
+                        <tr>
+                            <td>
+                                <small class="text-muted">{{ movement.date|date:"d/m/Y" }}</small>
+                                <br>
+                                <small>{{ movement.date|date:"H:i" }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ movement.product.description|truncatewords:3 }}</strong>
+                            </td>
+                            <td>
+                                <code class="text-muted">{{ movement.product.product_code }}</code>
+                            </td>
+                            <td>
+                                {% if movement.movement_type == 'entrada' %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-arrow-down me-1"></i> Entrada
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-arrow-up me-1"></i> Salida
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {% if movement.movement_type == 'entrada' %}bg-success{% else %}bg-warning{% endif %}">
+                                    {{ movement.quantity }}
+                                </span>
+                            </td>
+                            <td class="fw-bold">${{ movement.unit_price|intcomma }}</td>
+                            <td class="fw-bold {% if movement.movement_type == 'entrada' %}text-success{% else %}text-warning{% endif %}">
+                                ${{ movement.total_value|intcomma }}
+                            </td>
+                            <td>
+                                {% if movement.observations %}
+                                <small class="text-muted">{{ movement.observations|truncatewords:5 }}</small>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <i class="fas fa-exchange-alt fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">No se encontraron movimientos</p>
+                                <a href="{% url 'movements:create' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-1"></i> Registrar primer movimiento
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if movements %}
+                    <tfoot class="table-dark">
+                        <tr>
+                            <th colspan="4" class="text-end">Totales:</th>
+                            <th>{{ total_quantity|intcomma }}</th>
+                            <th>-</th>
+                            <th>${{ total_value|intcomma }}</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            {% if is_paginated %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.1) !important;
+    }
+    .badge {
+        font-size: 0.85em;
+    }
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+    code {
+        font-size: 0.85em;
+        background-color: #f8f9fa;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Detalles de Nota de Recepción #{{ reception.reception_number }}</h2>
+    <p><strong>Proveedor:</strong> {{ reception.supplier.name }}</p>
+    <p><strong>Fecha:</strong> {{ reception.reception_date|date:"d M Y" }}</p>
+    <p><strong>Recibido por:</strong> {{ reception.received_by.get_full_name }}</p>
+    <p><strong>Estado:</strong> {{ reception.get_status_display }}</p>
+    <p><strong>Notas:</strong> {{ reception.notes }}</p>
+    <hr>
+    <h3>Productos Recibidos</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.product.description }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>${{ item.unit_price }}</td>
+                <td>${{ item.subtotal }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No hay productos en esta nota de recepción.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{% url 'reception_notes:list' %}" class="btn btn-secondary">Volver a la Lista</a>
+    {% if reception.status == 'PENDING' %}
+    <form method="post" action="{% url 'reception_notes:validate' reception.pk %}" class="d-inline-block">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Validar Nota</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

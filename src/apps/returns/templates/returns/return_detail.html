@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Detalles de Nota de Devolución #{{ return_note.return_number }}</h2>
+    <p><strong>Nota de Despacho Original:</strong> {{ return_note.dispatch_note }}</p>
+    <p><strong>Estado:</strong> {{ return_note.get_status_display }}</p>
+    <hr>
+    <h3>Productos Devueltos</h3>
+    <table class="table table-striped">
+        </table>
+    <a href="{% url 'returns:list' %}" class="btn btn-secondary">Volver a la Lista</a>
+    {% if return_note.status == 'PENDING' %}
+    <form method="post" action="{% url 'returns:process' return_note.pk %}" class="d-inline-block">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Procesar Devolución</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

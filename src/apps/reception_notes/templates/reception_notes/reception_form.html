@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Crear Nota de Recepción</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <hr>
+        <h3>Productos Recibidos</h3>
+        {{ formset.management_form }}
+        {% for form in formset %}
+            <div class="form-row">
+                {{ form.as_p }}
+            </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a href="{% url 'reception_notes:list' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

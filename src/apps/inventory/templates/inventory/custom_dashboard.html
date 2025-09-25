@@ -1,0 +1,49 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2>Panel de Control Personalizado</h2>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-header">Notas de Recepción Pendientes</div>
+                <div class="card-body">
+                    <h4 class="card-title">{{ pending_receptions }}</h4>
+                    <p class="card-text">Notas esperando ser validadas.</p>
+                    <a href="{% url 'reception_notes:list' %}" class="btn btn-light">Ver Notas</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning mb-3">
+                <div class="card-header">Notas de Despacho Pendientes</div>
+                <div class="card-body">
+                    <h4 class="card-title">{{ pending_dispatches }}</h4>
+                    <p class="card-text">Pedidos esperando ser despachados.</p>
+                    <a href="{% url 'dispatch_notes:list' %}" class="btn btn-light">Ver Notas</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger mb-3">
+                <div class="card-header">Notas de Devolución Pendientes</div>
+                <div class="card-body">
+                    <h4 class="card-title">{{ pending_returns }}</h4>
+                    <p class="card-text">Devoluciones esperando ser procesadas.</p>
+                    <a href="{% url 'returns:list' %}" class="btn btn-light">Ver Notas</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-header">Productos en Inventario</div>
+                <div class="card-body">
+                    <h4 class="card-title">{{ total_products }}</h4>
+                    <p class="card-text">Total de productos registrados.</p>
+                    <a href="{% url 'admin:inventory_product_changelist' %}" class="btn btn-light">Ver Productos</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

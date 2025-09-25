@@ -1,0 +1,1352 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Panel izquierdo - Lista de productos -->
+        <div class="col-md-4 col-lg-3 sidebar-col">
+            <div class="card mb-4 odoo-sidebar">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Inventario</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="p-3 product-search-container">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                            <input type="text" id="global-product-search" class="form-control border-start-0" placeholder="Buscar producto...">
+                        </div>
+                    </div>
+                    
+                    <div class="product-categories">
+                        <div class="list-group list-group-flush">
+                            <a href="#" class="list-group-item list-group-item-action category-item active" data-category="all">
+                                <i class="fas fa-boxes me-2"></i>Todos los productos
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action category-item" data-category="consumable">
+                                <i class="fas fa-box me-2"></i>Consumibles
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action category-item" data-category="service">
+                                <i class="fas fa-concierge-bell me-2"></i>Servicios
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action category-item" data-category="electronic">
+                                <i class="fas fa-laptop me-2"></i>Electrónicos
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="product-list-container" style="max-height: 400px; overflow-y: auto;">
+                        <div class="list-group list-group-flush" id="product-list">
+                            <div class="list-group-item text-center text-muted py-4">
+                                <div class="loading-spinner mx-auto mb-2"></div>
+                                <small>Cargando productos...</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel central - Formulario de despacho -->
+        <div class="col-md-8 col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-truck me-2"></i>{% if form.instance.pk %}Editar{% else %}Crear{% endif %} Nota de Despacho</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="dispatch-form">
+                        {% csrf_token %}
+                        
+                        <!-- Información General -->
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                {{ form.dispatch_number|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.client|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.beneficiary|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.supplier|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.order_number|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        <!-- Información del Conductor y Vehículo -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-car me-2"></i>Información del Conductor y Vehículo</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        {{ form.driver_name|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        {{ form.driver_id|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        {{ form.vehicle_type|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        {{ form.vehicle_color|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        {{ form.license_plate|as_crispy_field }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Productos -->
+                        <div class="card">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="fas fa-boxes me-2"></i>Productos en el despacho</h6>
+                                <span class="badge bg-primary items-badge" id="items-count">0 items</span>
+                            </div>
+                            <div class="card-body p-0">
+                                {{ formset.management_form }}
+                                <div id="formset-container">
+                                    {% for item_form in formset %}
+                                    <div class="formset-item" data-product-id="{{ item_form.product.value|default:'' }}">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <div class="row align-items-center">
+                                                    <div class="col-md-5 mb-2">
+                                                        <div class="fw-bold product-name text-primary">
+                                                            {% if item_form.product.value %}
+                                                                Cargando producto...
+                                                            {% else %}
+                                                                <i class="fas fa-box-open me-2 text-muted"></i>Seleccione un producto
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="text-muted small product-code">
+                                                            {% if item_form.product.value %}
+                                                                ID: {{ item_form.product.value }}
+                                                            {% else %}
+                                                                Busque y seleccione un producto
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2 mb-2">
+                                                        <label class="form-label small fw-bold">Cantidad</label>
+                                                        {{ item_form.quantity }}
+                                                    </div>
+                                                    <div class="col-md-3 mb-2">
+                                                        <label class="form-label small fw-bold">Precio Unitario</label>
+                                                        {{ item_form.unit_price }}
+                                                    </div>
+                                                    <div class="col-md-2 mb-2">
+                                                        <label class="form-label small fw-bold">Total</label>
+                                                        <div class="form-control total-price total-display" readonly>$0.00</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-danger remove-item ms-2">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                        <!-- Campos ocultos -->
+                                        {{ item_form.id }}
+                                        {{ item_form.DELETE }}
+                                        {{ item_form.product }}
+                                        <input type="hidden" class="product-data" value="{{ item_form.product.value|default:'' }}">
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="p-3 bg-light d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong class="fs-5">Total:</strong>
+                                        <span id="order-total" class="fs-4 text-primary fw-bold">$0.00</span>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-info items-badge" id="total-items">0 items</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notas -->
+                        <div class="mt-4">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    {{ form.notes|as_crispy_field }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de acción -->
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-lg btn-primary">
+                                <i class="fas fa-check me-2"></i>Confirmar Despacho
+                            </button>
+                            <a href="{% url 'dispatch_notes:list' %}" class="btn btn-lg btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                            <button type="button" id="debug-btn" class="btn btn-lg btn-warning">
+                                <i class="fas fa-bug me-2"></i>Debug
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel derecho - Resumen e información adicional -->
+        <div class="col-md-12 col-lg-3">
+            <div class="card mb-4 summary-card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Resumen del Despacho</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span>Número de Despacho:</span>
+                        <strong id="summary-dispatch-number">{{ form.dispatch_number.value|default:"N/A" }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span>Cliente:</span>
+                        <strong id="summary-client">{{ form.client.value|default:"N/A" }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span>Beneficiario:</span>
+                        <strong id="summary-beneficiary">{{ form.beneficiary.value|default:"N/A" }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span>Proveedor:</span>
+                        <strong id="summary-supplier">{{ form.supplier.value|default:"N/A" }}</strong>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span>Conductor:</span>
+                        <strong id="summary-driver">{{ form.driver_name.value|default:"N/A" }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span>Vehículo:</span>
+                        <strong id="summary-vehicle">
+                            {% if form.vehicle_type.value or form.license_plate.value %}
+                                {{ form.vehicle_type.value|default:"" }} - {{ form.license_plate.value|default:"" }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card summary-card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Acciones Rápidas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-danger btn-sm" id="clear-cart">
+                            <i class="fas fa-trash me-2"></i>Vaciar Productos
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" id="add-item-btn">
+                            <i class="fas fa-plus me-2"></i>Añadir Producto
+                        </button>
+                        <button class="btn btn-outline-info btn-sm" id="apply-discount">
+                            <i class="fas fa-tag me-2"></i>Aplicar Descuento
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" id="add-note">
+                            <i class="fas fa-sticky-note me-2"></i>Agregar Nota
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template para items del formset -->
+<template id="empty-form-template">
+    <div class="formset-item" data-product-id="">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="row align-items-center">
+                    <div class="col-md-5 mb-2">
+                        <div class="fw-bold product-name text-primary">
+                            <i class="fas fa-box-open me-2 text-muted"></i>Seleccione un producto
+                        </div>
+                        <div class="text-muted small product-code">Busque y seleccione un producto</div>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label small fw-bold">Cantidad</label>
+                        <input type="number" name="__prefix__-quantity" class="form-control quantity quantity-control" min="1" value="1">
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label small fw-bold">Precio Unitario</label>
+                        <input type="number" name="__prefix__-unit_price" class="form-control unit-price price-control" step="0.01" value="0.00">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label small fw-bold">Total</label>
+                        <div class="form-control total-price total-display" readonly>$0.00</div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-item ms-2">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <input type="hidden" name="__prefix__-id" id="__prefix__-id">
+        <input type="hidden" name="__prefix__-DELETE" id="__prefix__-DELETE">
+        <input type="hidden" name="__prefix__-product" class="product-id">
+        <input type="hidden" class="product-data">
+    </div>
+</template>
+
+<style>
+.odoo-sidebar {
+    background-color: #f8f9fa;
+    border-right: 1px solid #dee2e6;
+    height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+
+.product-item {
+    transition: all 0.2s;
+    border: none;
+    border-bottom: 1px solid #eee;
+    padding: 12px 15px;
+}
+
+.product-item:hover {
+    background-color: #e9ecef;
+    cursor: pointer;
+}
+
+.product-item .product-price {
+    font-weight: bold;
+    color: #28a745;
+    font-size: 14px;
+}
+
+.product-item .product-stock {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.formset-item {
+    transition: all 0.3s;
+    padding: 15px;
+    margin-bottom: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    background-color: #fff;
+}
+
+.formset-item:hover {
+    background-color: #f8f9fa;
+}
+
+.category-item {
+    border: none;
+    border-radius: 0;
+    padding: 12px 15px;
+    font-weight: 500;
+}
+
+.category-item.active {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.category-item:not(.active):hover {
+    background-color: #e9ecef;
+}
+
+.product-search-container {
+    background-color: #e9ecef;
+    border-bottom: 1px solid #dee2e6;
+    padding: 15px;
+}
+
+.border-danger {
+    border: 2px solid #dc3545 !important;
+}
+
+/* Estilos específicos para la interfaz tipo Odoo */
+.product-grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    padding: 10px;
+}
+
+.product-card {
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+}
+
+.product-card:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.product-card .code {
+    font-size: 11px;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+.product-card .name {
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    height: 32px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.product-card .price {
+    font-weight: bold;
+    color: #28a745;
+    font-size: 13px;
+}
+
+.product-card .stock {
+    font-size: 11px;
+    color: #6c757d;
+}
+
+/* Mejoras para el formset */
+.quantity-control {
+    max-width: 80px;
+}
+
+.price-control {
+    max-width: 120px;
+}
+
+.total-display {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Layout improvements */
+.main-container {
+    min-height: calc(100vh - 100px);
+}
+
+.sidebar-col {
+    background: #f8f9fa;
+    border-right: 1px solid #dee2e6;
+}
+
+.summary-card {
+    position: sticky;
+    top: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .sidebar-col {
+        border-right: none;
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 20px;
+    }
+}
+
+/* Loading states */
+.loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0d6efd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Badge styles */
+.items-badge {
+    font-size: 0.8rem;
+    padding: 0.35em 0.65em;
+}
+
+/* Button styles */
+.btn-action {
+    border: 1px solid #dee2e6;
+    background: white;
+    transition: all 0.2s;
+}
+
+.btn-action:hover {
+    background: #f8f9fa;
+    border-color: #0d6efd;
+}
+
+/* Form improvements */
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("=== INICIANDO APLICACIÓN DE DESPACHO ===");
+    
+    // Variables globales
+    let products = [];
+    let currentFormIndex = parseInt("{{ formset.total_form_count }}") || 0;
+    const totalForms = document.querySelector('input[name$="TOTAL_FORMS"]');
+    const formsetContainer = document.getElementById('formset-container');
+    const emptyFormTemplate = document.getElementById('empty-form-template');
+    
+    // Función para esperar que un elemento exista
+    function waitForElement(selector, timeout = 5000) {
+        return new Promise((resolve, reject) => {
+            const startTime = Date.now();
+            const interval = setInterval(() => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    clearInterval(interval);
+                    resolve(element);
+                } else if (Date.now() - startTime >= timeout) {
+                    clearInterval(interval);
+                    reject(new Error(`Elemento ${selector} no encontrado después de ${timeout}ms`));
+                }
+            }, 100);
+        });
+    }
+    
+    // Inicializar la aplicación
+    async function init() {
+        console.log("1. Inicializando aplicación...");
+        
+        try {
+            // Esperar a que los elementos críticos carguen
+            await waitForElement('#formset-container');
+            await waitForElement('#product-list');
+            
+            loadProducts();
+            setupEventListeners();
+            updateSummary();
+            loadExistingProductData();
+            console.log("✅ Aplicación inicializada correctamente");
+        } catch (error) {
+            console.error('❌ Error inicializando aplicación:', error);
+            // Reintentar después de un segundo
+            setTimeout(init, 1000);
+        }
+    }
+    
+    // Cargar productos desde la API
+    function loadProducts() {
+        console.log("2. Cargando productos desde API...");
+        
+        document.getElementById('product-list').innerHTML = `
+            <div class="list-group-item text-center text-muted py-4">
+                <div class="loading-spinner mx-auto mb-2"></div>
+                <small>Cargando productos...</small>
+            </div>
+        `;
+        
+        fetch("{% url 'dispatch_notes:product_search_api' %}?all=true")
+            .then(response => {
+                if (!response.ok) throw new Error('Error en la API');
+                return response.json();
+            })
+            .then(data => {
+                console.log("✅ Productos cargados:", data.length);
+                products = data;
+                renderProductList();
+            })
+            .catch(error => {
+                console.error('❌ Error cargando productos:', error);
+                showProductError();
+            });
+    }
+    
+    function showProductError() {
+        document.getElementById('product-list').innerHTML = `
+            <div class="list-group-item text-center text-danger py-4">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <small>Error cargando productos</small>
+            </div>
+            <div class="list-group-item text-center">
+                <button class="btn btn-sm btn-primary" onclick="window.loadProducts()">
+                    <i class="fas fa-redo me-2"></i>Reintentar
+                </button>
+            </div>
+        `;
+    }
+    
+    // Renderizar la lista de productos
+    function renderProductList(filter = 'all') {
+        console.log("3. Renderizando lista de productos...");
+        const productList = document.getElementById('product-list');
+        
+        if (products.length === 0) {
+            productList.innerHTML = `
+                <div class="list-group-item text-center text-muted py-4">
+                    <i class="fas fa-box-open me-2"></i>
+                    <small>No hay productos disponibles</small>
+                </div>
+            `;
+            return;
+        }
+        
+        let filteredProducts = filter === 'all' ? products : products.filter(p => p.category === filter);
+        
+        if (filteredProducts.length === 0) {
+            productList.innerHTML = `
+                <div class="list-group-item text-center text-muted py-4">
+                    <i class="fas fa-search me-2"></i>
+                    <small>No hay productos en esta categoría</small>
+                </div>
+            `;
+            return;
+        }
+        
+        productList.innerHTML = '';
+        
+        filteredProducts.forEach(product => {
+            const productItem = createProductItem(product);
+            productList.appendChild(productItem);
+        });
+        
+        console.log(`✅ ${filteredProducts.length} productos renderizados`);
+    }
+    
+    function createProductItem(product) {
+        const productItem = document.createElement('div');
+        productItem.className = 'list-group-item product-item';
+        productItem.style.cursor = 'pointer';
+        productItem.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="flex-grow-1">
+                    <div class="fw-bold small">${product.product_code || 'Sin código'}</div>
+                    <div class="text-muted" style="font-size: 12px;">${product.description || 'Sin descripción'}</div>
+                </div>
+                <div class="text-end">
+                    <div class="product-price">$${product.unit_price || '0.00'}</div>
+                    <div class="product-stock">Stock: ${product.current_stock || 'N/A'}</div>
+                </div>
+            </div>
+        `;
+        
+        productItem.addEventListener('click', function(e) {
+            console.log("🖱️ Producto clickeado:", product);
+            addProductToFormset(product);
+            e.stopPropagation();
+        });
+        
+        return productItem;
+    }
+    
+    // Añadir producto al formset - FUNCIÓN PRINCIPAL
+    function addProductToFormset(product) {
+        console.log("4. Añadiendo producto al formset:", product);
+        
+        // Primero buscar items vacíos existentes
+        const emptyItems = document.querySelectorAll('.formset-item[data-isEmpty="true"]');
+        if (emptyItems.length > 0) {
+            console.log("Usando item vacío existente");
+            const emptyItem = emptyItems[0];
+            fillEmptyItem(emptyItem, product);
+            return;
+        }
+        
+        // Verificar si el producto ya existe en items no vacíos
+        const existingItem = findExistingProductItem(product.id);
+        if (existingItem) {
+            incrementProductQuantity(existingItem);
+            return;
+        }
+        
+        // Crear nuevo item
+        const newFormElement = createNewFormElement(product);
+        formsetContainer.appendChild(newFormElement);
+        
+        // Actualizar contadores
+        currentFormIndex++;
+        if (totalForms) {
+            totalForms.value = currentFormIndex;
+        }
+        
+        // Configurar eventos y actualizar
+        setupItemEventListeners(newFormElement);
+        updateItemTotal(newFormElement);
+        updateTotals();
+        
+        console.log("✅ Producto añadido exitosamente");
+    }
+    
+    function findExistingProductItem(productId) {
+        const items = document.querySelectorAll('.formset-item');
+        for (let item of items) {
+            if (item.style.display !== 'none') {
+                const existingProductId = item.querySelector('.product-id')?.value;
+                if (existingProductId == productId) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+    
+    function incrementProductQuantity(item) {
+        const quantityInput = item.querySelector('.quantity');
+        if (quantityInput) {
+            quantityInput.value = parseInt(quantityInput.value || 1) + 1;
+            updateItemTotal(item);
+            updateTotals();
+            
+            // Efecto visual
+            item.classList.add('bg-warning');
+            setTimeout(() => item.classList.remove('bg-warning'), 1000);
+            console.log("✅ Cantidad incrementada");
+        }
+    }
+    
+    function createNewFormElement(product) {
+        const newFormHtml = emptyFormTemplate.innerHTML.replace(/__prefix__/g, currentFormIndex);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = newFormHtml;
+        const newFormElement = tempDiv.firstElementChild;
+        
+        // Configurar valores
+        const productName = newFormElement.querySelector('.product-name');
+        const productCode = newFormElement.querySelector('.product-code');
+        const productIdInput = newFormElement.querySelector('.product-id');
+        const unitPriceInput = newFormElement.querySelector('.unit-price');
+        const quantityInput = newFormElement.querySelector('.quantity');
+        const productDataInput = newFormElement.querySelector('.product-data');
+        const deleteInput = newFormElement.querySelector('[name$="-DELETE"]');
+        const idInput = newFormElement.querySelector('[name$="-id"]');
+        
+        // Establecer valores
+        if (productName) {
+            productName.innerHTML = `<i class="fas fa-check-circle me-2 text-success"></i>${product.description || 'Producto'}`;
+        }
+        if (productCode) {
+            productCode.textContent = product.product_code ? `Código: ${product.product_code}` : `ID: ${product.id}`;
+        }
+        if (productIdInput) {
+            productIdInput.value = product.id;
+            productIdInput.name = `form-${currentFormIndex}-product`;
+        }
+        if (unitPriceInput) {
+            unitPriceInput.value = product.unit_price || '0.00';
+            unitPriceInput.name = `form-${currentFormIndex}-unit_price`;
+        }
+        if (quantityInput) {
+            quantityInput.value = '1';
+            quantityInput.name = `form-${currentFormIndex}-quantity`;
+        }
+        if (productDataInput) {
+            productDataInput.value = JSON.stringify(product);
+        }
+        if (deleteInput) {
+            deleteInput.name = `form-${currentFormIndex}-DELETE`;
+            deleteInput.value = '';
+        }
+        if (idInput) {
+            idInput.name = `form-${currentFormIndex}-id`;
+            idInput.value = '';
+        }
+        
+        newFormElement.dataset.productId = product.id;
+        newFormElement.dataset.isEmpty = 'false';
+        
+        return newFormElement;
+    }
+    
+    // Llenar item vacío con producto
+    function fillEmptyItem(item, product) {
+        console.log("Llenando item vacío con producto:", product);
+        
+        const productName = item.querySelector('.product-name');
+        const productCode = item.querySelector('.product-code');
+        const productIdInput = item.querySelector('.product-id');
+        const unitPriceInput = item.querySelector('.unit-price');
+        const quantityInput = item.querySelector('.quantity');
+        const productDataInput = item.querySelector('.product-data');
+        
+        // Actualizar valores
+        if (productName) {
+            productName.innerHTML = `<i class="fas fa-check-circle me-2 text-success"></i>${product.description || 'Producto'}`;
+        }
+        if (productCode) {
+            productCode.textContent = product.product_code ? `Código: ${product.product_code}` : `ID: ${product.id}`;
+        }
+        if (productIdInput) {
+            productIdInput.value = product.id;
+        }
+        if (unitPriceInput) {
+            unitPriceInput.value = product.unit_price || '0.00';
+        }
+        if (quantityInput) {
+            quantityInput.value = '1';
+        }
+        if (productDataInput) {
+            productDataInput.value = JSON.stringify(product);
+        }
+        
+        // Quitar marca de item vacío
+        item.dataset.isEmpty = 'false';
+        item.dataset.productId = product.id;
+        
+        // Actualizar totales
+        updateItemTotal(item);
+        updateTotals();
+        
+        console.log("✅ Item vacío convertido a producto");
+    }
+    
+    // Actualizar el total de un item - FUNCIÓN CORREGIDA
+    function updateItemTotal(item) {
+        try {
+            const quantityInput = item.querySelector('.quantity');
+            const priceInput = item.querySelector('.unit-price');
+            const totalElement = item.querySelector('.total-price');
+            
+            if (!quantityInput || !priceInput || !totalElement) {
+                console.warn('Elementos no encontrados para calcular total');
+                return;
+            }
+            
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
+            const total = quantity * price;
+            
+            totalElement.textContent = `$${total.toFixed(2)}`;
+        } catch (error) {
+            console.error('Error en updateItemTotal:', error);
+        }
+    }
+    
+    // Actualizar todos los totales - FUNCIÓN CORREGIDA
+    function updateTotals() {
+        try {
+            let orderTotal = 0;
+            let itemsCount = 0;
+            
+            const formsetItems = document.querySelectorAll('.formset-item');
+            
+            formsetItems.forEach(item => {
+                if (item.style.display !== 'none') {
+                    const quantityInput = item.querySelector('.quantity');
+                    const priceInput = item.querySelector('.unit-price');
+                    
+                    if (quantityInput && priceInput) {
+                        const quantity = parseFloat(quantityInput.value) || 0;
+                        const price = parseFloat(priceInput.value) || 0;
+                        orderTotal += quantity * price;
+                        itemsCount += quantity;
+                        
+                        // Actualizar el total individual de cada item
+                        updateItemTotal(item);
+                    }
+                }
+            });
+            
+            // Actualizar totales generales solo si los elementos existen
+            const orderTotalElement = document.getElementById('order-total');
+            const totalItemsElement = document.getElementById('total-items');
+            const itemsCountElement = document.getElementById('items-count');
+            
+            if (orderTotalElement) orderTotalElement.textContent = `$${orderTotal.toFixed(2)}`;
+            if (totalItemsElement) totalItemsElement.textContent = `${itemsCount} items`;
+            if (itemsCountElement) itemsCountElement.textContent = `${itemsCount} items`;
+            
+        } catch (error) {
+            console.error('Error en updateTotals:', error);
+        }
+    }
+    
+    // Configurar event listeners para los items - FUNCIÓN CORREGIDA
+    function setupItemEventListeners(item) {
+        try {
+            const quantityInput = item.querySelector('.quantity');
+            const priceInput = item.querySelector('.unit-price');
+            const removeBtn = item.querySelector('.remove-item');
+            
+            if (quantityInput) {
+                quantityInput.addEventListener('change', () => {
+                    updateItemTotal(item);
+                    updateTotals();
+                });
+                quantityInput.addEventListener('input', () => {
+                    updateItemTotal(item);
+                    updateTotals();
+                });
+            }
+            
+            if (priceInput) {
+                priceInput.addEventListener('change', () => {
+                    updateItemTotal(item);
+                    updateTotals();
+                });
+                priceInput.addEventListener('input', () => {
+                    updateItemTotal(item);
+                    updateTotals();
+                });
+            }
+            
+            if (removeBtn) {
+                removeBtn.addEventListener('click', () => {
+                    removeItem(item);
+                });
+            }
+        } catch (error) {
+            console.error('Error en setupItemEventListeners:', error);
+        }
+    }
+    
+    function removeItem(item) {
+        const productIdInput = item.querySelector('.product-id');
+        const deleteInput = item.querySelector('input[name$="-DELETE"]');
+        const idInput = item.querySelector('input[name$="-id"]');
+        const isEmpty = item.dataset.isEmpty === 'true';
+        
+        if (isEmpty) {
+            // Es un item vacío, eliminarlo completamente
+            item.remove();
+            currentFormIndex--;
+            if (totalForms) {
+                totalForms.value = currentFormIndex;
+            }
+        } else if (idInput && idInput.value) {
+            // Item existente con ID, marcar para eliminación
+            if (deleteInput) {
+                deleteInput.value = 'on';
+                item.style.display = 'none';
+            }
+        } else {
+            // Item nuevo sin ID, eliminarlo completamente
+            item.remove();
+            currentFormIndex--;
+            if (totalForms) {
+                totalForms.value = currentFormIndex;
+            }
+        }
+        
+        updateTotals();
+    }
+    
+// Validación adicional para el formulario
+document.querySelector('#movement-form').addEventListener('submit', function(e) {
+    // Validar que los campos requeridos estén completos
+    if (!productSelect.value || !quantityInput.value || !unitPriceInput.value) {
+        e.preventDefault();
+        alert('Por favor, complete todos los campos requeridos.');
+        return;
+    }
+    
+    // Validación de cantidad
+    const quantity = parseFloat(quantityInput.value);
+    if (quantity <= 0) {
+        e.preventDefault();
+        alert('La cantidad debe ser mayor a cero.');
+        return;
+    }
+    
+  // Validación adicional para el formulario
+document.querySelector('#movement-form').addEventListener('submit', function(e) {
+    // Validar que los campos requeridos estén completos
+    if (!productSelect.value || !quantityInput.value || !unitPriceInput.value) {
+        e.preventDefault();
+        alert('Por favor, complete todos los campos requeridos.');
+        return;
+    }
+    
+    // Validación de cantidad
+    const quantity = parseFloat(quantityInput.value);
+    if (quantity <= 0) {
+        e.preventDefault();
+        alert('La cantidad debe ser mayor a cero.');
+        return;
+    
+});
+    // Actualizar el resumen
+    function updateSummary() {
+        const fieldsToUpdate = [
+            'dispatch_number', 'client', 'beneficiary', 
+            'supplier', 'driver_name', 'vehicle_type', 'license_plate'
+        ];
+        
+        fieldsToUpdate.forEach(field => {
+            const input = document.querySelector(`[name="${field}"]`);
+            const summaryElement = document.getElementById(`summary-${field}`);
+            
+            if (input && summaryElement) {
+                summaryElement.textContent = input.value || 'N/A';
+                input.addEventListener('input', () => {
+                    summaryElement.textContent = input.value || 'N/A';
+                });
+            }
+        });
+    }
+    
+    // Cargar datos de productos existentes - FUNCIÓN CORREGIDA
+    function loadExistingProductData() {
+        console.log("5. Cargando productos existentes...");
+        try {
+            const formsetItems = document.querySelectorAll('.formset-item');
+            console.log('Encontrados', formsetItems.length, 'items existentes');
+            
+            formsetItems.forEach((item, index) => {
+                const productId = item.querySelector('[name$="-product"]')?.value;
+                console.log(`Item ${index}: productId =`, productId);
+                
+                // Verificar si es un item vacío por defecto
+                const isEmptyItem = !productId || productId === '' || productId === 'None';
+                
+                if (isEmptyItem) {
+                    console.log(`Item ${index} está vacío - configurando como nuevo`);
+                    // Es un item vacío por defecto, prepararlo para nuevo producto
+                    setupEmptyItem(item, index);
+                } else {
+                    // Es un item con producto existente
+                    console.log(`Item ${index} tiene producto:`, productId);
+                    updateProductDisplay(item, productId);
+                }
+                
+                setupItemEventListeners(item);
+                updateItemTotal(item);
+            });
+            
+            // Actualizar totales finales
+            updateTotals();
+        } catch (error) {
+            console.error('Error en loadExistingProductData:', error);
+        }
+    }
+    
+    // Configurar item vacío por defecto
+    function setupEmptyItem(item, index) {
+        const productName = item.querySelector('.product-name');
+        const productCode = item.querySelector('.product-code');
+        const quantityInput = item.querySelector('.quantity');
+        const priceInput = item.querySelector('.unit-price');
+        
+        if (productName) {
+            productName.innerHTML = '<i class="fas fa-box-open me-2 text-muted"></i>Seleccione un producto';
+        }
+        if (productCode) {
+            productCode.textContent = 'Busque y seleccione un producto';
+        }
+        if (quantityInput) {
+            quantityInput.value = '1';
+            quantityInput.name = `form-${index}-quantity`;
+        }
+        if (priceInput) {
+            priceInput.value = '0.00';
+            priceInput.name = `form-${index}-unit_price`;
+        }
+        
+        // Marcar como item vacío
+        item.dataset.isEmpty = 'true';
+    }
+    
+    function updateProductDisplay(item, productId) {
+        const productName = item.querySelector('.product-name');
+        const productCode = item.querySelector('.product-code');
+        const product = products.find(p => p.id == productId);
+        
+        if (product) {
+            if (productName) {
+                productName.innerHTML = `<i class="fas fa-check-circle me-2 text-success"></i>${product.description || 'Producto'}`;
+            }
+            if (productCode) {
+                productCode.textContent = product.product_code ? `Código: ${product.product_code}` : `ID: ${productId}`;
+            }
+        } else {
+            if (productName) {
+                productName.innerHTML = `<i class="fas fa-box me-2 text-muted"></i>Producto ID: ${productId}`;
+            }
+            if (productCode) {
+                productCode.textContent = `ID: ${productId}`;
+            }
+        }
+    }
+    
+    // Configurar event listeners principales
+    function setupEventListeners() {
+        console.log("6. Configurando event listeners...");
+        
+        // Búsqueda de productos
+        const searchInput = document.getElementById('global-product-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', debounce(function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                document.querySelectorAll('.product-item').forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+                });
+            }, 300));
+        }
+        
+        // Categorías
+        document.querySelectorAll('.category-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                renderProductList(this.dataset.category);
+            });
+        });
+        
+        // Botones de acción
+        document.getElementById('add-item-btn')?.addEventListener('click', addManualProduct);
+        document.getElementById('clear-cart')?.addEventListener('click', clearCart);
+        document.getElementById('debug-btn')?.addEventListener('click', showDebugInfo);
+        
+        // Validación del formulario - MEJORADA
+        const form = document.getElementById('dispatch-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (!validateForm(e)) {
+                    // Prevenir envío si la validación falla
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Validación adicional: mostrar datos que se enviarán
+                console.log("=== DATOS QUE SE ENVIARÁN ===");
+                const formData = new FormData(this);
+                for (let [key, value] of formData.entries()) {
+                    console.log(key, value);
+                }
+                
+                // Confirmación final
+                if (!confirm('¿Está seguro de que desea guardar la nota de despacho?')) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                return true;
+            });
+        }
+        
+        console.log("✅ Event listeners configurados");
+    }
+    
+    function addManualProduct() {
+        addProductToFormset({
+            id: 'manual-' + Date.now(),
+            product_code: 'MANUAL',
+            description: 'Producto manual',
+            unit_price: 0.00,
+            current_stock: 'N/A'
+        });
+    }
+    
+    function clearCart() {
+        if (confirm('¿Vaciar todos los productos?')) {
+            document.querySelectorAll('.formset-item').forEach(item => item.remove());
+            currentFormIndex = 0;
+            if (totalForms) {
+                totalForms.value = 0;
+            }
+            updateTotals();
+        }
+    }
+    
+    // Validación del formulario - FUNCIÓN MEJORADA
+    function validateForm(e) {
+        console.log("=== VALIDANDO FORMULARIO ANTES DE ENVIAR ===");
+        
+        let hasProducts = false;
+        let errorItems = [];
+        let validItems = [];
+        
+        // Validar todos los items
+        document.querySelectorAll('.formset-item').forEach((item, index) => {
+            if (item.style.display !== 'none') {
+                const productId = item.querySelector('.product-id')?.value;
+                const quantity = item.querySelector('.quantity')?.value;
+                const price = item.querySelector('.unit-price')?.value;
+                
+                console.log(`Item ${index}:`, { productId, quantity, price });
+                
+                if (productId && productId !== '' && quantity && price) {
+                    hasProducts = true;
+                    validItems.push({
+                        product: productId,
+                        quantity: quantity,
+                        unit_price: price
+                    });
+                    item.classList.remove('border-danger');
+                } else {
+                    errorItems.push(index + 1);
+                    item.classList.add('border-danger');
+                    
+                    // Debug detallado
+                    console.error(`Item ${index} inválido:`, {
+                        productId: productId || 'FALTANTE',
+                        quantity: quantity || 'FALTANTE', 
+                        price: price || 'FALTANTE'
+                    });
+                }
+            }
+        });
+        
+        // Mostrar información de debug
+        console.log('Items válidos:', validItems);
+        console.log('Items con error:', errorItems);
+        console.log('Tiene productos:', hasProducts);
+        
+        if (!hasProducts) {
+            alert('Debe agregar al menos un producto válido.');
+            return false;
+        }
+        
+        if (errorItems.length > 0) {
+            alert(`Los siguientes items tienen errores: ${errorItems.join(', ')}\n\nPor favor complete todos los campos correctamente.`);
+            return false;
+        }
+        
+        // Todo válido, proceder con envío
+        console.log('✅ Formulario válido, enviando...');
+        return true;
+    }
+    
+    function showDebugInfo() {
+        console.log('=== DEBUG INFO ===');
+        console.log('Total forms:', totalForms?.value);
+        console.log('Current form index:', currentFormIndex);
+        console.log('Products loaded:', products.length);
+        
+        const formsetItems = document.querySelectorAll('.formset-item');
+        console.log('Formset items:', formsetItems.length);
+        
+        formsetItems.forEach((item, index) => {
+            const productId = item.querySelector('.product-id')?.value;
+            const quantity = item.querySelector('.quantity')?.value;
+            const price = item.querySelector('.unit-price')?.value;
+            console.log(`Item ${index}:`, {
+                productId: productId || 'NO ID',
+                quantity: quantity || 'NO QTY', 
+                price: price || 'NO PRICE',
+                visible: item.style.display !== 'none'
+            });
+        });
+        
+        // Verificar si los elementos de totales existen
+        console.log('Order total element exists:', !!document.getElementById('order-total'));
+        console.log('Total items element exists:', !!document.getElementById('total-items'));
+        console.log('Items count element exists:', !!document.getElementById('items-count'));
+    }
+    
+    // Helper function
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    // Función para debuggear el formset completo
+    function debugFormsetBeforeSubmit() {
+        console.log("=== DEBUG FORMSET ANTES DE ENVIAR ===");
+        console.log("TOTAL_FORMS:", totalForms?.value);
+        
+        const formsetData = [];
+        document.querySelectorAll('.formset-item').forEach((item, index) => {
+            if (item.style.display !== 'none') {
+                const data = {
+                    index: index,
+                    product: item.querySelector('.product-id')?.value,
+                    quantity: item.querySelector('.quantity')?.value,
+                    unit_price: item.querySelector('.unit-price')?.value,
+                    id: item.querySelector('[name$="-id"]')?.value,
+                    delete: item.querySelector('[name$="-DELETE"]')?.value
+                };
+                formsetData.push(data);
+                console.log(`Item ${index}:`, data);
+            }
+        });
+        
+        return formsetData;
+    }
+    
+    // Test function para verificar que los clics funcionen
+    function testProductClick() {
+        if (products.length > 0) {
+            console.log('🔧 Test: Simulando clic en primer producto');
+            addProductToFormset(products[0]);
+        } else {
+            console.log('⚠️  No hay productos para probar');
+        }
+    }
+    
+    // Función para inspeccionar un item específico
+    function inspectItem(index = 0) {
+        const items = document.querySelectorAll('.formset-item');
+        if (items.length > index) {
+            const item = items[index];
+            console.log('=== INSPECCIONANDO ITEM ${index} ===');
+            console.log('Elemento:', item);
+            console.log('Dataset:', item.dataset);
+            console.log('Product ID:', item.querySelector('.product-id')?.value);
+            console.log('Quantity:', item.querySelector('.quantity')?.value);
+            console.log('Price:', item.querySelector('.unit-price')?.value);
+            console.log('isEmpty:', item.dataset.isEmpty);
+        } else {
+            console.log('No hay item en el índice', index);
+        }
+    }
+    
+    // Inicializar
+    console.log("🚀 Iniciando aplicación...");
+    init();
+    
+    // Funciones globales para debugging
+    window.loadProducts = loadProducts;
+    window.addProductToFormset = addProductToFormset;
+    window.testProductClick = testProductClick;
+    window.showDebugInfo = showDebugInfo;
+    window.debugInfo = showDebugInfo;
+    window.inspectItem = inspectItem;
+    window.debugFormset = debugFormsetBeforeSubmit;
+});
+</script>
+{% endblock %}

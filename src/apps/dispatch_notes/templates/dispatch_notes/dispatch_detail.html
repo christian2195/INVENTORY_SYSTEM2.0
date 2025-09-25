@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-truck me-2"></i>Despacho #{{ dispatch_note.dispatch_number }}</h2>
+            <p class="text-muted mb-0">Detalles completos del despacho</p>
+        </div>
+        <div>
+            <a href="{% url 'dispatch_notes:list' %}" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i> Volver
+            </a>
+            {% if dispatch_note.status == 'PENDING' %}
+            <form action="{% url 'dispatch_notes:confirm_dispatch' dispatch_note.pk %}" method="post" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success me-2" onclick="return confirm('¿Confirmar este despacho? Esta acción no se puede deshacer.');">
+                    <i class="fas fa-check me-1"></i> Confirmar
+                </button>
+            </form>
+            {% endif %}
+            <a href="{% url 'dispatch_notes:print' dispatch_note.pk %}" class="btn btn-primary" target="_blank">
+                <i class="fas fa-print me-1"></i> PDF
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Información Principal -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información del Despacho</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Número:</strong><br>{{ dispatch_note.dispatch_number }}</p>
+                            <p><strong>Cliente:</strong><br>{{ dispatch_note.client|default:"-" }}</p>
+                            <p><strong>Beneficiario:</strong><br>{{ dispatch_note.beneficiary }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Estado:</strong><br>
+                                <span class="badge {% if dispatch_note.status == 'PENDING' %}bg-warning{% else %}bg-success{% endif %}">
+                                    {{ dispatch_note.get_status_display }}
+                                </span>
+                            </p>
+                            <p><strong>Fecha:</strong><br>{{ dispatch_note.dispatch_date|date:"d/m/Y" }}</p>
+                            <p><strong>Creado por:</strong><br>{{ dispatch_note.created_by.username }}</p>
+                        </div>
+                    </div>
+                    {% if dispatch_note.notes %}
+                    <div class="mt-3">
+                        <strong>Notas:</strong>
+                        <div class="alert alert-info mt-2">
+                            {{ dispatch_note.notes }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Información del Transporte -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-truck me-2"></i>Información del Transporte</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Conductor:</strong><br>{{ dispatch_note.driver_name }}</p>
+                            <p><strong>C.I.:</strong><br>{{ dispatch_note.driver_id }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Vehículo:</strong><br>{{ dispatch_note.vehicle_type }}</p>
+                            <p><strong>Placa:</strong><br>{{ dispatch_note.license_plate }}</p>
+                            <p><strong>Color:</strong><br>{{ dispatch_note.vehicle_color }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Productos Despachados -->
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Productos Despachados</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Producto</th>
+                            <th>Código</th>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unitario</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in dispatch_note.items.all %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <strong>{{ item.product.description }}</strong>
+                                {% if item.product.current_stock < item.quantity %}
+                                <span class="badge bg-danger ms-1" title="Stock insuficiente después del despacho">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td><code>{{ item.product.product_code }}</code></td>
+                            <td>{{ item.brand|default:"-" }}</td>
+                            <td>{{ item.model|default:"-" }}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ item.quantity }}</span>
+                            </td>
+                            <td>Bs. {{ item.unit_price|intcomma }}</td>
+                            <td class="fw-bold">Bs. {{ item.subtotal|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <i class="fas fa-box-open fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">No hay productos en este despacho</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-dark">
+                        <tr>
+                            <th colspan="7" class="text-end">Total del Despacho:</th>
+                            <th class="fs-5">Bs. {{ dispatch_note.total|intcomma }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Adicionales -->
+    {% if dispatch_note.status == 'PENDING' %}
+    <div class="card mt-4 border-warning">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Acciones Pendientes</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <strong>Este despacho está pendiente de confirmación.</strong>
+                <p class="mb-0">Una vez confirmado, se descontarán los productos del inventario y no podrá ser editado.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <form action="{% url 'dispatch_notes:confirm_dispatch' dispatch_note.pk %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success" onclick="return confirm('¿Confirmar este despacho? Esta acción no se puede deshacer.');">
+                        <i class="fas fa-check me-1"></i> Confirmar Despacho
+                    </button>
+                </form>
+                <a href="{% url 'dispatch_notes:update' dispatch_note.pk %}" class="btn btn-warning">
+                    <i class="fas fa-edit me-1"></i> Editar Despacho
+                </a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card mt-4 border-success">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Despacho Completado</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-success">
+                <strong>Este despacho ha sido confirmado y procesado.</strong>
+                <p class="mb-0">Los productos han sido descontados del inventario correctamente.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+    .badge {
+        font-size: 0.85em;
+    }
+    .table th {
+        background-color: #f8f9fa;
+        border-top: 2px solid #dee2e6;
+    }
+    .alert {
+        border: none;
+        border-left: 4px solid;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-plus-circle me-2"></i>Registrar Movimiento</h2>
+            <p class="text-muted mb-0">Registrar entrada o salida de inventario</p>
+        </div>
+        <a href="{% url 'movements:list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Volver
+        </a>
+    </div>
+
+    <!-- Formulario -->
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Información del Movimiento</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Mensajes de error -->
+                    {% if messages %}
+                    <div class="mb-4">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Errores del formulario -->
+                    {% if form.errors %}
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Errores en el formulario:</strong>
+                        <ul class="mb-0 mt-2">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{% if field != '__all__' %}<strong>{{ field }}:</strong> {% endif %}{{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" id="movement-form" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.product|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.movement_type|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ form.quantity|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.unit_price|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Valor Total</label>
+                                <div class="form-control" id="total-value" style="background-color: #f8f9fa;">
+                                    $0.00
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                {{ form.observations|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        <!-- Información del Producto -->
+                        <div class="card mt-4" id="product-info" style="display: none;">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">Información del Producto</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Stock Actual:</strong>
+                                        <span id="current-stock">0</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Stock Mínimo:</strong>
+                                        <span id="min-stock">0</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Ubicación:</strong>
+                                        <span id="product-location">-</span>
+                                    </div>
+                                </div>
+                                <div class="alert alert-warning mt-2" id="stock-warning" style="display: none;">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    <span id="warning-message"></span>
+                                </div>
+                                <div class="alert alert-danger mt-2" id="stock-error" style="display: none;">
+                                    <i class="fas fa-ban me-1"></i>
+                                    <span id="error-message"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary" id="submit-btn">
+                                <i class="fas fa-save me-1"></i> Guardar Movimiento
+                            </button>
+                            <a href="{% url 'movements:list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Variables de Elementos del DOM
+        const productSelect = document.querySelector('#id_product');
+        const quantityInput = document.querySelector('#id_quantity');
+        const unitPriceInput = document.querySelector('#id_unit_price');
+        const movementTypeSelect = document.querySelector('#id_movement_type');
+        const totalValueElement = document.querySelector('#total-value');
+        const productInfo = document.querySelector('#product-info');
+        const currentStockElement = document.querySelector('#current-stock');
+        const minStockElement = document.querySelector('#min-stock');
+        const productLocationElement = document.querySelector('#product-location');
+        const stockWarning = document.querySelector('#stock-warning');
+        const warningMessage = document.querySelector('#warning-message');
+        const stockError = document.querySelector('#stock-error');
+        const errorMessage = document.querySelector('#error-message');
+        const submitBtn = document.querySelector('#submit-btn');
+        const movementForm = document.querySelector('#movement-form');
+        
+        // Variable para controlar el estado de envío y prevenir duplicados
+        let formSubmitted = false;
+    
+        // Función 1: Calcular el valor total en tiempo real
+        function calculateTotal() {
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const unitPrice = parseFloat(unitPriceInput.value) || 0;
+            
+            // Validar que los valores no sean negativos
+            if (quantity < 0 || unitPrice < 0) {
+                totalValueElement.textContent = 'Error: Valores negativos';
+                totalValueElement.style.color = '#dc3545';
+                return;
+            }
+            
+            const total = quantity * unitPrice;
+            totalValueElement.textContent = '$' + total.toFixed(2);
+            totalValueElement.style.color = '#0d6efd';
+        }
+    
+        // Función 2: Cargar información del producto vía API
+        function loadProductInfo(productId) {
+            // Ocultar la información si no hay producto seleccionado
+            if (!productId) {
+                productInfo.style.display = 'none';
+                return;
+            }
+    
+            // Usar la URL de la API de inventario en español
+            fetch(`/api/inventario/products/${productId}/`)
+                .then(response => {
+                    if (!response.ok) {
+                        // Lanza un error si la respuesta no es 200 OK
+                        throw new Error('Error en la respuesta de la API');
+                    }
+                    return response.json();
+                })
+                .then(product => {
+                    // Actualiza el stock y el resto de la información del producto
+                    currentStockElement.textContent = product.current_stock;
+                    minStockElement.textContent = product.min_stock || 0;
+                    productLocationElement.textContent = product.location || '-';
+                    productInfo.style.display = 'block';
+    
+                    // Llama a la validación de stock después de cargar la información
+                    validateMovement(product.current_stock, product.min_stock || 0);
+                })
+                .catch(error => {
+                    console.error('Error loading product info:', error);
+                    productInfo.style.display = 'none';
+                    // Muestra un mensaje de error claro al usuario
+                    showError('No se pudo cargar la información del producto. Recargue la página.');
+                });
+        }
+    
+        // Función 3: Validar el movimiento
+        function validateMovement(currentStock, minStock) {
+            const quantity = parseFloat(quantityInput.value) || 0;
+            
+            // Ocultar mensajes anteriores antes de re-validar
+            stockWarning.style.display = 'none';
+            stockError.style.display = 'none';
+            submitBtn.disabled = false;
+            
+            if (movementTypeSelect.value === 'OUT') {
+                // Validación crítica: evitar stock negativo
+                if (quantity > currentStock) {
+                    errorMessage.textContent = `Stock insuficiente. No puede sacar ${quantity} unidades. Stock actual: ${currentStock}`;
+                    stockError.style.display = 'block';
+                    submitBtn.disabled = true; // Deshabilita el botón de enviar
+                    return false;
+                }
+                
+                // Advertencia: si la salida deja el stock por debajo del mínimo
+                if (currentStock - quantity < minStock) {
+                    warningMessage.textContent = `Alerta: El stock quedará por debajo del mínimo (${minStock}) después de esta salida`;
+                    stockWarning.style.display = 'block';
+                    submitBtn.disabled = false; // Permite el envío, pero con advertencia
+                    return true;
+                }
+            }
+            
+            return true;
+        }
+    
+        // Función 4: Mostrar un error
+        function showError(message) {
+            errorMessage.textContent = message;
+            stockError.style.display = 'block';
+            submitBtn.disabled = true;
+        }
+    
+        // Prevenir doble envío y validar al enviar el formulario
+        movementForm.addEventListener('submit', function(e) {
+            // Validación inicial de campos antes de procesar
+            if (!productSelect.value || !quantityInput.value || !unitPriceInput.value) {
+                e.preventDefault();
+                alert('Por favor, complete todos los campos requeridos.');
+                return;
+            }
+            
+            const quantity = parseFloat(quantityInput.value);
+            if (quantity <= 0) {
+                e.preventDefault();
+                alert('La cantidad debe ser mayor a cero.');
+                return;
+            }
+            
+            const unitPrice = parseFloat(unitPriceInput.value);
+            if (unitPrice < 0) {
+                e.preventDefault();
+                alert('El precio unitario no puede ser negativo.');
+                return;
+            }
+            
+            // Re-validación del stock
+            const currentStock = parseInt(currentStockElement.textContent) || 0;
+            if (movementTypeSelect.value === 'OUT' && quantity > currentStock) {
+                e.preventDefault();
+                alert(`ERROR: No puede sacar ${quantity} unidades. Stock disponible: ${currentStock}`);
+                return;
+            }
+            
+            // Prevención de doble envío: la lógica más importante aquí
+            if (formSubmitted) {
+                e.preventDefault();
+                alert('El formulario ya está siendo procesado. Por favor, espere.');
+                return;
+            }
+            
+            // Marcar formulario como enviado y deshabilitar botón
+            formSubmitted = true;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+        });
+    
+        // Event listeners para actualizar la UI en tiempo real
+        quantityInput.addEventListener('input', () => { calculateTotal(); loadProductInfo(productSelect.value); });
+        unitPriceInput.addEventListener('input', calculateTotal);
+        productSelect.addEventListener('change', () => { calculateTotal(); loadProductInfo(productSelect.value); });
+        movementTypeSelect.addEventListener('change', () => { calculateTotal(); loadProductInfo(productSelect.value); });
+    
+        // Lógica de inicialización al cargar la página
+        calculateTotal();
+        if (productSelect.value) {
+            loadProductInfo(productSelect.value);
+        }
+    });
+</script>
+
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+    #total-value {
+        font-weight: bold;
+        color: #0d6efd;
+        text-align: center;
+        padding: 0.75rem;
+    }
+    .alert {
+        border: none;
+        border-left: 4px solid;
+    }
+    .alert-warning {
+        border-left-color: #ffc107;
+    }
+    .alert-danger {
+        border-left-color: #dc3545;
+    }
+    #submit-btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+</style>
+{% endblock %}

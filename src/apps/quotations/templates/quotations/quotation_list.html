@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Cotizaciones</h2>
+    <a href="{% url 'quotations:create' %}" class="btn btn-primary mb-3">➕ Nueva Cotización</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>N° de Cotización</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Total</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for quotation in quotations %}
+            <tr>
+                <td>{{ quotation.quotation_number }}</td>
+                <td>{{ quotation.client.name }}</td>
+                <td>{{ quotation.quotation_date|date:"d M Y" }}</td>
+                <td>{{ quotation.get_status_display }}</td>
+                <td>${{ quotation.total|floatformat:2 }}</td>
+                <td>
+                    <a href="{% url 'quotations:detail' quotation.pk %}" class="btn btn-sm btn-info">Ver</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">No hay cotizaciones registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+# src/apps/movements/apps.py
+from django.apps import AppConfig
+
+class MovementsConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.movements'
+    label = 'movements'

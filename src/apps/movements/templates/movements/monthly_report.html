@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte Mensual de Movimientos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --light-bg: #f8f9fa;
+        }
+        
+        body {
+            background-color: #f5f7f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border: none;
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            background-color: var(--secondary-color);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            font-weight: 600;
+        }
+        
+        .table thead th {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+        }
+        
+        .summary-card {
+            transition: transform 0.3s;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .movement-in {
+            border-left: 4px solid var(--success-color);
+        }
+        
+        .movement-out {
+            border-left: 4px solid var(--danger-color);
+        }
+        
+        .filters {
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin-bottom: 30px;
+        }
+        
+        .action-buttons .btn {
+            margin-left: 5px;
+        }
+        
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            .card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-chart-line me-2"></i>Reporte Mensual de Movimientos</h2>
+                <p class="text-muted">Reporte de movimientos desde <strong>{{ start_date|date:"d M Y" }}</strong> hasta <strong>{{ end_date|date:"d M Y" }}</strong></p>
+            </div>
+            <img src="https://via.placeholder.com/150x50?text=Logo" alt="Logo" class="img-fluid">
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters no-print">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="movementType" class="form-label">Tipo de Movimiento</label>
+                    <select class="form-select" id="movementType">
+                        <option value="all">Todos los tipos</option>
+                        <option value="in">Entradas</option>
+                        <option value="out">Salidas</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="productFilter" class="form-label">Producto</label>
+                    <select class="form-select" id="productFilter">
+                        <option value="all">Todos los productos</option>
+                        <!-- Opciones de productos se llenarían dinámicamente -->
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="sortBy" class="form-label">Ordenar por</label>
+                    <select class="form-select" id="sortBy">
+                        <option value="date">Fecha</option>
+                        <option value="product">Producto</option>
+                        <option value="quantity">Cantidad</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" id="applyFilters">
+                        <i class="fas fa-filter me-1"></i>Aplicar Filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card summary-card bg-success text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Entradas</h5>
+                        <h2 class="card-text">1,245 unidades</h2>
+                        <p class="card-text">$15,670.50</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card summary-card bg-danger text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Salidas</h5>
+                        <h2 class="card-text">985 unidades</h2>
+                        <p class="card-text">$12,340.75</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card summary-card bg-primary text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Saldo Neto</h5>
+                        <h2 class="card-text">+260 unidades</h2>
+                        <p class="card-text">+$3,329.75</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card summary-card bg-secondary text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Productos Activos</h5>
+                        <h2 class="card-text">24</h2>
+                        <p class="card-text">8 categorías</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="row no-print">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Distribución por Producto</div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="productDistributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Tendencia de Movimientos</div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="movementTrendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de movimientos -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Detalle de Movimientos</span>
+                <div class="action-buttons no-print">
+                    <button class="btn btn-sm btn-outline-primary" id="printReport">
+                        <i class="fas fa-print me-1"></i>Imprimir
+                    </button>
+                    <button class="btn btn-sm btn-outline-success" id="exportPDF">
+                        <i class="fas fa-file-pdf me-1"></i>PDF
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" id="exportExcel">
+                        <i class="fas fa-file-excel me-1"></i>Excel
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Precio Unitario</th>
+                                <th>Valor Total</th>
+                                <th>Observaciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for movement in movements %}
+                            <tr class="movement-{{ movement.movement_type }}">
+                                <td>{{ movement.date|date:"d M Y" }}</td>
+                                <td>
+                                    <span class="badge bg-{% if movement.movement_type == 'in' %}success{% else %}danger{% endif %}">
+                                        {{ movement.get_movement_type_display }}
+                                    </span>
+                                </td>
+                                <td>{{ movement.product.description }}</td>
+                                <td>{{ movement.quantity }}</td>
+                                <td>${{ movement.unit_price|floatformat:2 }}</td>
+                                <td><strong>${{ movement.total_value|floatformat:2 }}</strong></td>
+                                <td>{{ movement.observations }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4">No se encontraron movimientos en este período.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-active">
+                                <th colspan="3" class="text-end">Totales:</th>
+                                <th>2,230</th>
+                                <th>-</th>
+                                <th>$27,985.25</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pie de página -->
+        <div class="row mt-4 no-print">
+            <div class="col-md-12 text-center">
+                <p class="text-muted">Reporte generado el {% now "d M Y H:i" %}</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Gráfico de distribución por producto
+            const productCtx = document.getElementById('productDistributionChart').getContext('2d');
+            const productChart = new Chart(productCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Producto A', 'Producto B', 'Producto C', 'Producto D', 'Otros'],
+                    datasets: [{
+                        data: [30, 25, 20, 15, 10],
+                        backgroundColor: [
+                            '#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de tendencia de movimientos
+            const trendCtx = document.getElementById('movementTrendChart').getContext('2d');
+            const trendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+                    datasets: [{
+                        label: 'Entradas',
+                        data: [120, 150, 180, 200],
+                        borderColor: '#2ecc71',
+                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }, {
+                        label: 'Salidas',
+                        data: [100, 130, 160, 170],
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Botón de imprimir
+            document.getElementById('printReport').addEventListener('click', function() {
+                window.print();
+            });
+
+            // Simulación de filtros
+            document.getElementById('applyFilters').addEventListener('click', function() {
+                alert('Los filtros se aplicarían en una implementación real');
+            });
+
+            // Simulación de exportación
+            document.getElementById('exportPDF').addEventListener('click', function() {
+                alert('Exportando a PDF...');
+            });
+
+            document.getElementById('exportExcel').addEventListener('click', function() {
+                alert('Exportando a Excel...');
+            });
+        });
+    </script>
+</body>
+</html>

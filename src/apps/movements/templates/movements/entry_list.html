@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-arrow-down me-2 text-success"></i>Entradas de Inventario</h2>
+            <p class="text-muted mb-0">Registro de ingresos de productos al inventario</p>
+        </div>
+        <a href="{% url 'movements:create' %}" class="btn btn-success">
+            <i class="fas fa-plus me-1"></i> Nueva Entrada
+        </a>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ entries|length|intcomma }}</h5>
+                    <p class="card-text">Total Entradas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ total_quantity|intcomma }}</h5>
+                    <p class="card-text">Cantidad Total</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">${{ total_value|intcomma }}</h5>
+                    <p class="card-text">Valor Total</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Entradas -->
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Historial de Entradas</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Producto</th>
+                            <th>Código</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unitario</th>
+                            <th>Valor Total</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in entries %}
+                        <tr>
+                            <td>
+                                <small class="text-muted">{{ entry.date|date:"d/m/Y" }}</small>
+                                <br>
+                                <small>{{ entry.date|date:"H:i" }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ entry.product.description }}</strong>
+                            </td>
+                            <td>
+                                <code>{{ entry.product.product_code }}</code>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">{{ entry.quantity }}</span>
+                            </td>
+                            <td class="fw-bold">${{ entry.unit_price|intcomma }}</td>
+                            <td class="fw-bold text-success">${{ entry.total_value|intcomma }}</td>
+                            <td>
+                                {% if entry.observations %}
+                                <small class="text-muted">{{ entry.observations|truncatewords:3 }}</small>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">No se encontraron entradas</p>
+                                <a href="{% url 'movements:create' %}" class="btn btn-success">
+                                    <i class="fas fa-plus me-1"></i> Registrar primera entrada
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if entries %}
+                    <tfoot class="table-success">
+                        <tr>
+                            <th colspan="3" class="text-end">Totales:</th>
+                            <th>{{ total_quantity|intcomma }}</th>
+                            <th>-</th>
+                            <th>${{ total_value|intcomma }}</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+    .badge {
+        font-size: 0.85em;
+    }
+    code {
+        font-size: 0.85em;
+        background-color: #f8f9fa;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-trash me-2"></i>Confirmar Eliminación</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">¿Está seguro de que desea eliminar este movimiento?</p>
+                    
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6>Detalles del Movimiento:</h6>
+                            <p><strong>Producto:</strong> {{ object.product.description }}</p>
+                            <p><strong>Tipo:</strong> {{ object.get_movement_type_display }}</p>
+                            <p><strong>Cantidad:</strong> {{ object.quantity }}</p>
+                            <p><strong>Fecha:</strong> {{ object.date|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-1"></i> Sí, Eliminar
+                            </button>
+                            <a href="{% url 'movements:list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

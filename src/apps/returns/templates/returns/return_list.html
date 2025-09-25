@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Notas de Devolución</h2>
+    <a href="{% url 'returns:create' %}" class="btn btn-primary mb-3">➕ Nueva Devolución</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>N° de Devolución</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for return_note in returns %}
+            <tr>
+                <td>{{ return_note.return_number }}</td>
+                <td>{{ return_note.client.name }}</td>
+                <td>{{ return_note.return_date|date:"d M Y" }}</td>
+                <td>{{ return_note.get_status_display }}</td>
+                <td>
+                    <a href="{% url 'returns:detail' return_note.pk %}" class="btn btn-sm btn-info">Ver</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">No hay notas de devolución registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
