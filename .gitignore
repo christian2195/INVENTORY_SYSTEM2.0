@@ -1,0 +1,12 @@
+# OS junk
+.DS_Store
+
+# Editor configs
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+
+# Environment
+.env
