@@ -1,13 +1,293 @@
 {% extends 'base.html' %}
-
+{% load static %}
 {% block content %}
-<div class="container mt-5">
-    <h1 class="mb-4">Crear Nueva Cotización</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-primary">Guardar</button>
-        <a href="{% url 'quotations:list' %}" class="btn btn-secondary">Cancelar</a>
-    </form>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-plus-circle me-2"></i>
+                {% if object %}Editar{% else %}Crear{% endif %} Cotización
+            </h4>
+        </div>
+        <div class="card-body">
+            <form method="post" id="quotation-form">
+                {% csrf_token %}
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>Información Principal</h6>
+                        
+                        <!-- Mostrar número de cotización -->
+                        {% if object %}
+                        <div class="mb-3">
+                            <label class="form-label">Número de Cotización</label>
+                            <input type="text" class="form-control" value="{{ object.quotation_number }}" readonly>
+                            <div class="form-text">Número generado automáticamente</div>
+                        </div>
+                        {% else %}
+                        <div class="mb-3">
+                            <label class="form-label">Número de Cotización</label>
+                            <input type="text" class="form-control" value="Se generará automáticamente" readonly>
+                            <div class="form-text">Número generado automáticamente al guardar</div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Campos visibles del formulario principal -->
+                        {% for field in form.visible_fields %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                                <div class="text-danger small">{{ field.errors }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Resumen</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div id="summary-content">
+                                    <p class="text-muted mb-1">Agregue productos para ver el resumen</p>
+                                    <div class="d-none" id="summary-details">
+                                        <p><strong>Subtotal:</strong> $<span id="summary-subtotal">0.00</span></p>
+                                        <p><strong>Total:</strong> $<span id="summary-total">0.00</span></p>
+                                        <p class="small text-muted"><span id="summary-items">0</span> producto(s)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+                
+                <h5 class="mb-3">
+                    <i class="fas fa-boxes me-2"></i>Productos de la Cotización
+                </h5>
+                
+                {{ formset.management_form }}
+<div id="formset-container">
+    {% for form in formset %}
+    <div class="card mb-3 form-row-item">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <!-- Campos ocultos del formset -->
+                {% for hidden in form.hidden_fields %}
+                    {{ hidden }}
+                {% endfor %}
+                
+                <!-- Campos visibles del formset -->
+                <div class="col-md-4">
+                    <label for="{{ form.product.id_for_label }}" class="form-label small">Producto</label>
+                    {{ form.product }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ form.quantity.id_for_label }}" class="form-label small">Cantidad</label>
+                    {{ form.quantity }}
+                </div>
+                <div class="col-md-3">
+                    <label for="{{ form.unit_price.id_for_label }}" class="form-label small">Precio Unitario</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        {{ form.unit_price }}
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Subtotal</label>
+                    <input type="text" class="form-control subtotal-display" readonly value="$0.00">
+                </div>
+                <div class="col-md-1">
+                    {% if form.DELETE %}
+                    <div class="form-check">
+                                        {{ form.DELETE }}
+                                        <label for="{{ form.DELETE.id_for_label }}" class="form-check-label text-danger" title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </label>
+                                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 </div>
+                
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <button type="button" class="btn btn-outline-primary" id="add-more">
+                        <i class="fas fa-plus me-1"></i> Agregar otro producto
+                    </button>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i> Guardar Cotización
+                        </button>
+                        <a href="{% url 'quotations:list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i> Cancelar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-row-item {
+    border-left: 4px solid #0d6efd;
+    transition: all 0.3s ease;
+}
+
+.form-row-item:hover {
+    border-left-color: #198754;
+}
+
+.subtotal-display {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+.quantity-input, .price-input {
+    text-align: right;
+}
+
+/* Estilo para filas marcadas para eliminar */
+.form-row-item.deleting {
+    opacity: 0.6;
+    background-color: #fff3cd;
+    border-left-color: #dc3545;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let formCount = parseInt(document.getElementById('id_form-TOTAL_FORMS').value);
+    const addButton = document.getElementById('add-more');
+    
+    // Función simple para agregar nueva fila
+    function addNewForm() {
+        const formsetContainer = document.getElementById('formset-container');
+        const lastForm = formsetContainer.lastElementChild;
+        
+        if (!lastForm) return;
+        
+        // Clonar la última forma
+        const newForm = lastForm.cloneNode(true);
+        
+        // Limpiar valores
+        newForm.querySelectorAll('input, select').forEach(field => {
+            if (field.name.includes('product')) {
+                field.value = '';
+            } else if (field.name.includes('quantity')) {
+                field.value = '1';
+            } else if (field.name.includes('unit_price')) {
+                field.value = '0.00';
+            } else if (field.name.includes('id')) {
+                field.value = '';
+            }
+        });
+        
+        // Resetear subtotal
+        newForm.querySelector('.subtotal-display').value = '$0.00';
+        
+        // Resetear checkbox de eliminar
+        const deleteCheckbox = newForm.querySelector('input[type="checkbox"]');
+        if (deleteCheckbox) {
+            deleteCheckbox.checked = false;
+            newForm.classList.remove('deleting');
+        }
+        
+        // Actualizar nombres e IDs
+        newForm.querySelectorAll('[name]').forEach(field => {
+            field.name = field.name.replace(/-\d+-/, `-${formCount}-`);
+        });
+        
+        newForm.querySelectorAll('[id]').forEach(field => {
+            field.id = field.id.replace(/-\d+-/, `-${formCount}-`);
+        });
+        
+        // Agregar eventos
+        addEventsToForm(newForm);
+        
+        // Agregar al contenedor
+        formsetContainer.appendChild(newForm);
+        
+        // Actualizar contador
+        formCount++;
+        document.getElementById('id_form-TOTAL_FORMS').value = formCount;
+        
+        console.log('Nueva forma agregada. Total:', formCount);
+    }
+    
+    // Agregar eventos a una forma
+    function addEventsToForm(form) {
+        const quantity = form.querySelector('.quantity-input');
+        const price = form.querySelector('.price-input');
+        const product = form.querySelector('.product-select');
+        const deleteBtn = form.querySelector('input[type="checkbox"]');
+        
+        function updateSubtotal() {
+            const qty = parseFloat(quantity.value) || 0;
+            const prc = parseFloat(price.value) || 0;
+            const subtotal = qty * prc;
+            form.querySelector('.subtotal-display').value = '$' + subtotal.toFixed(2);
+            updateTotal();
+        }
+        
+        if (quantity) quantity.addEventListener('input', updateSubtotal);
+        if (price) price.addEventListener('input', updateSubtotal);
+        if (product) product.addEventListener('change', function() {
+            if (this.value) {
+                fetch(`/cotizaciones/api/producto/${this.value}/precio/`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.price) {
+                            price.value = parseFloat(data.price).toFixed(2);
+                            updateSubtotal();
+                        }
+                    });
+            }
+        });
+        if (deleteBtn) deleteBtn.addEventListener('change', function() {
+            form.classList.toggle('deleting', this.checked);
+            updateTotal();
+        });
+    }
+    
+    // Actualizar total general
+    function updateTotal() {
+        let total = 0;
+        document.querySelectorAll('.form-row-item').forEach(form => {
+            if (!form.classList.contains('deleting')) {
+                const subtotalText = form.querySelector('.subtotal-display').value;
+                const subtotal = parseFloat(subtotalText.replace('$', '')) || 0;
+                total += subtotal;
+            }
+        });
+        
+        const summary = document.getElementById('summary-details');
+        if (total > 0) {
+            document.getElementById('summary-subtotal').textContent = total.toFixed(2);
+            document.getElementById('summary-total').textContent = total.toFixed(2);
+            summary.classList.remove('d-none');
+            document.querySelector('#summary-content .text-muted').classList.add('d-none');
+        } else {
+            summary.classList.add('d-none');
+            document.querySelector('#summary-content .text-muted').classList.remove('d-none');
+        }
+    }
+    
+    // Inicializar eventos en formas existentes
+    document.querySelectorAll('.form-row-item').forEach(addEventsToForm);
+    updateTotal();
+    
+    // Evento del botón agregar
+    if (addButton) {
+        addButton.addEventListener('click', addNewForm);
+    }
+});
+</script>
 {% endblock %}

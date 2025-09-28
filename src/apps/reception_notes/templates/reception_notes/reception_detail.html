@@ -90,7 +90,7 @@
                             <td>{{ forloop.counter }}</td>
                             <td>
                                 <strong>{{ item.product.description }}</strong>
-                                {% if item.product.name %}<br><small class="text-muted">{{ item.product.name }}</small>{% endif %}
+                                {% if item.product.name %}<br><small class="text-muted">{{ item.product.description }}</small>{% endif %}
                             </td>
                             <td><span class="badge bg-secondary">{{ item.product.code }}</span></td>
                             <td>{{ item.quantity }}</td>
