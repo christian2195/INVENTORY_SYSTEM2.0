@@ -8,11 +8,12 @@ class DispatchNoteForm(forms.ModelForm):
     class Meta:
         model = DispatchNote
         fields = [
-            #'dispatch_number', 
+            'dispatch_number', 
             'client', 
             'beneficiary',
             'supplier',
             'order_number',
+            'dispatch_date', # <-- AÑADIDO: Ahora se maneja en el formulario
             'driver_name',
             'driver_id',
             'vehicle_type',
@@ -26,6 +27,7 @@ class DispatchNoteForm(forms.ModelForm):
             'beneficiary': forms.TextInput(attrs={'class': 'form-control'}),
             'supplier': forms.Select(attrs={'class': 'form-control'}),
             'order_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'dispatch_date': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}), # <-- AÑADIDO
             'driver_name': forms.TextInput(attrs={'class': 'form-control'}),
             'driver_id': forms.TextInput(attrs={'class': 'form-control'}),
             'vehicle_type': forms.TextInput(attrs={'class': 'form-control'}),
