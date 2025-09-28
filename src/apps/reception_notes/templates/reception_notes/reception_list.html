@@ -1,35 +1,119 @@
+<!-- reception_list.html -->
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
 <div class="container mt-4">
-    <h2>Notas de Recepción</h2>
-    <a href="{% url 'reception_notes:create' %}" class="btn btn-primary mb-3">➕ Nueva Nota de Recepción</a>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Número</th>
-                <th>Proveedor</th>
-                <th>Fecha</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for reception in receptions %}
-            <tr>
-                <td>{{ reception.reception_number }}</td>
-                <td>{{ reception.supplier.name }}</td>
-                <td>{{ reception.reception_date|date:"d M Y" }}</td>
-                <td>{{ reception.get_status_display }}</td>
-                <td>
-                    <a href="{% url 'reception_notes:detail' reception.pk %}" class="btn btn-sm btn-info">Ver</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5">No hay notas de recepción registradas.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-clipboard-list me-2 text-success"></i>Notas de Recepción
+        </h2>
+        <a href="{% url 'reception_notes:create' %}" class="btn btn-success">
+            <i class="fas fa-plus me-1"></i> Nueva Recepción
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h6 class="mb-0">Lista de Recepciones</h6>
+        </div>
+        <div class="card-body">
+            {% if receptions %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-success">
+                        <tr>
+                            <th>N° Recepción</th>
+                            <th>Proveedor</th>
+                            <th>Fecha</th>
+                            <th>Productos</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reception in receptions %}
+                        <tr>
+                            <td>
+                                <strong>#{{ reception.reception_number }}</strong>
+                            </td>
+                            <td>{{ reception.supplier.name }}</td>
+                            <td>{{ reception.reception_date|date:"d M Y" }}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ reception.items.count }}</span>
+                            </td>
+                            <td>
+                                <strong class="text-success">${{ reception.total|default:"0.00" }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if reception.status == 'PENDING' %}bg-warning
+                                    {% elif reception.status == 'RECEIVED' %}bg-success
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ reception.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'reception_notes:detail' reception.pk %}" class="btn btn-outline-info" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if reception.status == 'PENDING' %}
+                                    <a href="{% url 'reception_notes:update' reception.pk %}" class="btn btn-outline-warning" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                    <button onclick="window.print()" class="btn btn-outline-secondary" title="Imprimir">
+                                        <i class="fas fa-print"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginación -->
+            {% if is_paginated %}
+            <nav aria-label="Paginación">
+                <ul class="pagination justify-content-center mt-4">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">&laquo; Primera</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No hay notas de recepción registradas</h4>
+                <p class="text-muted">Comienza creando tu primera nota de recepción</p>
+                <a href="{% url 'reception_notes:create' %}" class="btn btn-success mt-2">
+                    <i class="fas fa-plus me-1"></i> Crear Primera Recepción
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
 {% endblock %}

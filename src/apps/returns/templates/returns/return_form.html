@@ -1,20 +1,133 @@
+<!-- return_form.html -->
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
 <div class="container mt-4">
-    <h2>Crear Nota de Devolución</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <hr>
-        <h3>Productos Devueltos</h3>
-        {{ formset.management_form }}
-        {% for form in formset %}
-            <div class="form-row">
-                {{ form.as_p }}
-            </div>
-        {% endfor %}
-        <button type="submit" class="btn btn-primary">Guardar</button>
-        <a href="{% url 'returns:list' %}" class="btn btn-secondary">Cancelar</a>
-    </form>
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-plus-circle me-2"></i>
+                {% if object %}Editar{% else %}Crear{% endif %} Nota de Devolución
+            </h4>
+        </div>
+        <div class="card-body">
+            <form method="post" id="return-form">
+                {% csrf_token %}
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>Información Principal</h6>
+                        {% for field in form %}
+                            {% if field.name != 'notes' %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <div class="form-text">{{ field.help_text }}</div>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <div class="text-danger small">{{ field.errors }}</div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Observaciones</h6>
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">{{ form.notes.label }}</label>
+                            {{ form.notes }}
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+                
+                <h5 class="mb-3">
+                    <i class="fas fa-boxes me-2"></i>Productos Devueltos
+                </h5>
+                
+                {{ formset.management_form }}
+                <div id="formset-container">
+                    {% for form in formset %}
+                    <div class="card mb-3 form-row-item">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                {% for field in form %}
+                                    {% if field.name != 'DELETE' %}
+                                    <div class="col-md-6">
+                                        <label for="{{ field.id_for_label }}" class="form-label small">{{ field.label }}</label>
+                                        {{ field }}
+                                        {% if field.errors %}
+                                            <div class="text-danger small">{{ field.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                                <div class="col-md-12">
+                                    {% if form.DELETE %}
+                                    <div class="form-check">
+                                        {{ form.DELETE }}
+                                        <label for="{{ form.DELETE.id_for_label }}" class="form-check-label text-danger">
+                                            Eliminar este producto
+                                        </label>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <button type="button" class="btn btn-outline-primary" id="add-more">
+                        <i class="fas fa-plus me-1"></i> Agregar otro producto
+                    </button>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i> Guardar
+                        </button>
+                        <a href="{% url 'returns:list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i> Cancelar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
+
+<style>
+.form-row-item {
+    border-left: 4px solid #0d6efd;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mejorar la apariencia de los campos de formulario
+    document.querySelectorAll('input, select, textarea').forEach(function(element) {
+        element.classList.add('form-control');
+    });
+    
+    // Los campos de checkbox necesitan una clase diferente
+    document.querySelectorAll('input[type="checkbox"]').forEach(function(checkbox) {
+        checkbox.classList.remove('form-control');
+        checkbox.classList.add('form-check-input');
+    });
+    
+    // Funcionalidad para agregar más productos
+    document.getElementById('add-more').addEventListener('click', function() {
+        // Esta funcionalidad requeriría JavaScript más avanzado para clonar formsets
+        alert('Funcionalidad para agregar productos - implementar con JavaScript avanzado');
+    });
+});
+</script>
 {% endblock %}

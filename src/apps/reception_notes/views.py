@@ -37,11 +37,16 @@ class ReceptionNoteCreateView(LoginRequiredMixin, CreateView):
         formset = context['formset']
         
         with transaction.atomic():
+            # Asignar el usuario actual como creador
+            form.instance.created_by = self.request.user
             self.object = form.save()
             
             if formset.is_valid():
                 formset.instance = self.object
                 formset.save()
+                
+                # Actualizar el total después de guardar los items
+                self.object.update_total()
             else:
                 return self.form_invalid(form)
             
@@ -63,6 +68,24 @@ class ReceptionNoteUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'reception_notes/reception_form.html'
     success_url = reverse_lazy('reception_notes:list')
     
+    def form_valid(self, form):
+        context = self.get_context_data()
+        formset = context['formset']
+        
+        with transaction.atomic():
+            self.object = form.save()
+            
+            if formset.is_valid():
+                formset.instance = self.object
+                formset.save()
+                
+                # Actualizar el total después de guardar los items
+                self.object.update_total()
+            else:
+                return self.form_invalid(form)
+            
+        return redirect(self.get_success_url())
+
 @transaction.atomic
 def validate_reception_note(request, pk):
     reception_note = get_object_or_404(ReceptionNote, pk=pk)

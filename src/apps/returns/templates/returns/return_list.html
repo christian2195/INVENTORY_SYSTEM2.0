@@ -1,35 +1,115 @@
+<!-- return_list.html -->
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
 <div class="container mt-4">
-    <h2>Notas de Devolución</h2>
-    <a href="{% url 'returns:create' %}" class="btn btn-primary mb-3">➕ Nueva Devolución</a>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>N° de Devolución</th>
-                <th>Cliente</th>
-                <th>Fecha</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for return_note in returns %}
-            <tr>
-                <td>{{ return_note.return_number }}</td>
-                <td>{{ return_note.client.name }}</td>
-                <td>{{ return_note.return_date|date:"d M Y" }}</td>
-                <td>{{ return_note.get_status_display }}</td>
-                <td>
-                    <a href="{% url 'returns:detail' return_note.pk %}" class="btn btn-sm btn-info">Ver</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5">No hay notas de devolución registradas.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-undo-alt me-2 text-primary"></i>Notas de Devolución
+        </h2>
+        <a href="{% url 'returns:create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Nueva Devolución
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if returns %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>N° Devolución</th>
+                            <th>Cliente</th>
+                            <th>Despacho Original</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Productos</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for return_note in returns %}
+                        <tr>
+                            <td>
+                                <strong>#{{ return_note.return_number }}</strong>
+                            </td>
+                            <td>{{ return_note.client.name }}</td>
+                            <td>
+                                {% if return_note.dispatch_note %}
+                                <span class="badge bg-info">#{{ return_note.dispatch_note.dispatch_number }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Sin despacho</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ return_note.return_date|date:"d M Y" }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if return_note.status == 'PENDING' %}bg-warning
+                                    {% elif return_note.status == 'RETURNED' %}bg-success
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ return_note.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ return_note.items.count }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'returns:detail' return_note.pk %}" class="btn btn-sm btn-outline-info" title="Ver detalles">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if return_note.status == 'PENDING' %}
+                                <a href="#" class="btn btn-sm btn-outline-warning" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginación -->
+            {% if is_paginated %}
+            <nav aria-label="Paginación">
+                <ul class="pagination justify-content-center mt-4">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">&laquo; Primera</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-undo-alt fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No hay notas de devolución registradas</h4>
+                <p class="text-muted">Comienza creando tu primera nota de devolución</p>
+                <a href="{% url 'returns:create' %}" class="btn btn-primary mt-2">
+                    <i class="fas fa-plus me-1"></i> Crear Primera Devolución
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
 {% endblock %}
