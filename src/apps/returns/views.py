@@ -7,6 +7,7 @@ from django.db import transaction
 from django.db.models import F
 from django.contrib import messages
 from django import forms
+from django.utils import timezone  # ¡IMPORTANTE: Agregar esta importación!
 from .models import ReturnNote, ReturnItem
 from .forms import ReturnNoteForm, ReturnItemFormSet
 from apps.dispatch_notes.models import DispatchNote
@@ -149,15 +150,34 @@ class ReturnNoteDetailView(LoginRequiredMixin, DetailView):
 @transaction.atomic
 def process_return_note(request, pk):
     return_note = get_object_or_404(ReturnNote, pk=pk)
-    if request.method == 'POST' and return_note.status == 'PENDING':
-        return_note.status = 'RETURNED'
-        return_note.save()
-
-        for item in return_note.items.all():
-            item.product.current_stock = F('current_stock') + item.quantity
-            item.product.save(update_fields=['current_stock'])
-
-        messages.success(request, f'Nota de devolución #{return_note.return_number} procesada exitosamente.')
+    
+    # Verificar que la devolución esté pendiente
+    if return_note.status != 'PENDING':
+        messages.error(request, f'La devolución #{return_note.return_number} ya fue procesada anteriormente.')
+        return redirect('returns:detail', pk=return_note.pk)
+    
+    if request.method == 'POST':
+        try:
+            # Cambiar estado primero
+            return_note.status = 'RETURNED'
+            return_note.processed_date = timezone.now()  # ¡Ahora funciona!
+            return_note.save()
+            
+            # Actualizar stock para cada producto
+            for item in return_note.items.all():
+                product = item.product
+                product.current_stock += item.quantity
+                product.save(update_fields=['current_stock'])
+                
+                # Opcional: registrar el movimiento en un log
+                # create_stock_movement_log(product, item.quantity, 'RETURN', return_note)
+            
+            messages.success(request, f'Nota de devolución #{return_note.return_number} procesada exitosamente. Stock actualizado.')
+            
+        except Exception as e:
+            messages.error(request, f'Error al procesar la devolución: {str(e)}')
+            # El transaction.atomic hará rollback automáticamente
+        
         return redirect('returns:detail', pk=return_note.pk)
     
     return redirect('returns:detail', pk=return_note.pk)

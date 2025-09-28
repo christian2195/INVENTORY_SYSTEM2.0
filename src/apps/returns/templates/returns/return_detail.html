@@ -9,7 +9,7 @@
                 <i class="fas fa-undo-alt me-2"></i>
                 Nota de Devolución #{{ return_note.return_number }}
             </h4>
-            <span class="badge {% if return_note.status == 'PENDING' %}bg-light text-dark{% else %}bg-light text-dark{% endif %}">
+            <span class="badge {% if return_note.status == 'PENDING' %}bg-light text-dark{% elif return_note.status == 'RETURNED' %}bg-light text-success{% else %}bg-light text-dark{% endif %}">
                 {{ return_note.get_status_display }}
             </span>
         </div>
@@ -20,7 +20,15 @@
                     <table class="table table-sm table-borderless">
                         <tr>
                             <td><strong>Nota de Despacho:</strong></td>
-                            <td>{{ return_note.dispatch_note }}</td>
+                            <td>
+                                {% if return_note.dispatch_note %}
+                                <a href="{% url 'dispatch_notes:detail' return_note.dispatch_note.pk %}" class="text-decoration-none">
+                                    #{{ return_note.dispatch_note.dispatch_number }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">No asociada</span>
+                                {% endif %}
+                            </td>
                         </tr>
                         <tr>
                             <td><strong>Cliente:</strong></td>
@@ -34,13 +42,37 @@
                             <td><strong>Creado por:</strong></td>
                             <td>{{ return_note.created_by.get_full_name|default:return_note.created_by.username }}</td>
                         </tr>
+                        {% if return_note.status == 'RETURNED' %}
+                        <tr>
+                            <td><strong>Procesada el:</strong></td>
+                            <td>
+                                {% if return_note.processed_date %}
+                                    {{ return_note.processed_date|date:"d M Y H:i" }}
+                                {% else %}
+                                    <span class="text-muted">Fecha no registrada</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
                     </table>
                 </div>
                 <div class="col-md-6">
                     <h6>Observaciones</h6>
                     <div class="border rounded p-3 bg-light">
-                        {{ return_note.notes|default:"Sin observaciones" }}
+                        {{ return_note.notes|default:"Sin observaciones"|linebreaks }}
                     </div>
+                    
+                    {% if return_note.status == 'RETURNED' %}
+                    <div class="mt-3 p-3 bg-success bg-opacity-10 border border-success rounded">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <strong class="text-success">Devolución Procesada</strong>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            El stock de los productos ha sido actualizado en el inventario.
+                        </small>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -48,6 +80,7 @@
             
             <h5 class="mb-3">
                 <i class="fas fa-boxes me-2"></i>Productos Devueltos
+                <span class="badge bg-primary ms-2">{{ items.count }}</span>
             </h5>
             
             <div class="table-responsive">
@@ -58,24 +91,53 @@
                             <th>Código</th>
                             <th>Cantidad</th>
                             <th>Unidad</th>
+                            {% if return_note.status == 'RETURNED' %}
+                            <th>Stock Actualizado</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in items %}
                         <tr>
-                            <td>{{ item.product.name }}</td>
+                            <td>
+                                <strong>{{ item.product.name }}</strong>
+                                {% if item.product.description %}
+                                <br><small class="text-muted">{{ item.product.description|truncatewords:10 }}</small>
+                                {% endif %}
+                            </td>
                             <td><span class="badge bg-secondary">{{ item.product.code }}</span></td>
-                            <td>{{ item.quantity }}</td>
+                            <td>
+                                <span class="fw-bold">{{ item.quantity }}</span>
+                            </td>
                             <td>{{ item.product.unit_measure }}</td>
+                            {% if return_note.status == 'RETURNED' %}
+                            <td>
+                                <span class="badge bg-success">
+                                    +{{ item.quantity }} unidades
+                                </span>
+                            </td>
+                            {% endif %}
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-3">
+                            <td colspan="{% if return_note.status == 'RETURNED' %}5{% else %}4{% endif %}" class="text-center text-muted py-4">
                                 <i class="fas fa-exclamation-circle me-2"></i>No hay productos en esta devolución
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
+                    {% if items %}
+                    <tfoot>
+                        <tr class="table-active">
+                            <td colspan="2"><strong>Total</strong></td>
+                            <td><strong>{{ items|length }} producto{{ items|length|pluralize }}</strong></td>
+                            <td></td>
+                            {% if return_note.status == 'RETURNED' %}
+                            <td></td>
+                            {% endif %}
+                        </tr>
+                    </tfoot>
+                    {% endif %}
                 </table>
             </div>
             
@@ -85,15 +147,37 @@
                 </a>
                 
                 {% if return_note.status == 'PENDING' %}
-                <form method="post" action="{% url 'returns:process' return_note.pk %}" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-success" onclick="return confirm('¿Estás seguro de que deseas procesar esta devolución? Esta acción no se puede deshacer.')">
-                        <i class="fas fa-cog me-1"></i> Procesar Devolución
-                    </button>
-                </form>
+                <div class="d-flex gap-2">
+                    <a href="#" class="btn btn-outline-warning" title="Editar devolución">
+                        <i class="fas fa-edit me-1"></i> Editar
+                    </a>
+                    <form method="post" action="{% url 'returns:process' return_note.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success" onclick="return confirm('¿Estás seguro de que deseas procesar esta devolución?\n\nEsta acción sumará los productos al inventario y no se puede deshacer.')">
+                            <i class="fas fa-cog me-1"></i> Procesar Devolución
+                        </button>
+                    </form>
+                </div>
+                {% elif return_note.status == 'RETURNED' %}
+                <div class="text-end">
+                    <small class="text-muted d-block">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Esta devolución ya fue procesada y el stock actualizado
+                    </small>
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.card-header {
+    border-bottom: 2px solid rgba(0,0,0,0.1);
+}
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+</style>
 {% endblock %}

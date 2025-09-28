@@ -18,6 +18,7 @@ class ReturnNote(models.Model):
     dispatch_note = models.ForeignKey(DispatchNote, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Nota de Despacho Original")
     client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Cliente")
     return_date = models.DateTimeField(default=timezone.now, verbose_name="Fecha de Devolución")
+    processed_date = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de Procesamiento")  # NUEVO CAMPO
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Creado por")
     status = models.CharField(max_length=20, choices=RETURN_STATUS_CHOICES, default='PENDING', verbose_name="Estado")
     notes = models.TextField(blank=True, verbose_name="Observaciones")
@@ -56,6 +57,13 @@ class ReturnNote(models.Model):
         
         # Formatear el número con ceros a la izquierda
         return f'DEV-{current_year}-{next_number:04d}'
+    
+    def clean(self):
+        if self.status == 'RETURNED' and self.pk:
+            # Verificar que no se modifique una devolución ya procesada
+            original = ReturnNote.objects.get(pk=self.pk)
+            if original.status == 'RETURNED' and self.status != 'RETURNED':
+                raise ValidationError('No se puede modificar una devolución ya procesada.')
 
 class ReturnItem(models.Model):
     return_note = models.ForeignKey(ReturnNote, related_name='items', on_delete=models.CASCADE, verbose_name="Nota de Devolución")
