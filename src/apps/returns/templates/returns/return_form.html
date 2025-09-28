@@ -14,10 +14,32 @@
             <form method="post" id="return-form">
                 {% csrf_token %}
                 
+                <!-- Campos ocultos del formulario principal -->
+                {% for field in form.hidden_fields %}
+                    {{ field }}
+                {% endfor %}
+                
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <h6>Información Principal</h6>
-                        {% for field in form %}
+                        
+                        <!-- Mostrar número de devolución -->
+                        {% if object %}
+                        <div class="mb-3">
+                            <label class="form-label">Número de Devolución</label>
+                            <input type="text" class="form-control" value="{{ object.return_number }}" readonly>
+                            <div class="form-text">Número generado automáticamente</div>
+                        </div>
+                        {% else %}
+                        <div class="mb-3">
+                            <label class="form-label">Número de Devolución</label>
+                            <input type="text" class="form-control" value="Se generará automáticamente" readonly>
+                            <div class="form-text">Número generado automáticamente al guardar</div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Campos visibles del formulario principal -->
+                        {% for field in form.visible_fields %}
                             {% if field.name != 'notes' %}
                             <div class="mb-3">
                                 <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
@@ -37,6 +59,9 @@
                         <div class="mb-3">
                             <label for="{{ form.notes.id_for_label }}" class="form-label">{{ form.notes.label }}</label>
                             {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger small">{{ form.notes.errors }}</div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -53,7 +78,13 @@
                     <div class="card mb-3 form-row-item">
                         <div class="card-body">
                             <div class="row g-3">
-                                {% for field in form %}
+                                <!-- Campos ocultos del formset -->
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                                
+                                <!-- Campos visibles del formset -->
+                                {% for field in form.visible_fields %}
                                     {% if field.name != 'DELETE' %}
                                     <div class="col-md-6">
                                         <label for="{{ field.id_for_label }}" class="form-label small">{{ field.label }}</label>
@@ -64,16 +95,18 @@
                                     </div>
                                     {% endif %}
                                 {% endfor %}
+                                
+                                <!-- Campo DELETE -->
+                                {% if form.DELETE %}
                                 <div class="col-md-12">
-                                    {% if form.DELETE %}
                                     <div class="form-check">
                                         {{ form.DELETE }}
                                         <label for="{{ form.DELETE.id_for_label }}" class="form-check-label text-danger">
                                             Eliminar este producto
                                         </label>
                                     </div>
-                                    {% endif %}
                                 </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -113,20 +146,20 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Mejorar la apariencia de los campos de formulario
-    document.querySelectorAll('input, select, textarea').forEach(function(element) {
-        element.classList.add('form-control');
+    document.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function(element) {
+        if (element.type !== 'checkbox') {
+            element.classList.add('form-control');
+        }
     });
     
     // Los campos de checkbox necesitan una clase diferente
     document.querySelectorAll('input[type="checkbox"]').forEach(function(checkbox) {
-        checkbox.classList.remove('form-control');
         checkbox.classList.add('form-check-input');
     });
     
-    // Funcionalidad para agregar más productos
-    document.getElementById('add-more').addEventListener('click', function() {
-        // Esta funcionalidad requeriría JavaScript más avanzado para clonar formsets
-        alert('Funcionalidad para agregar productos - implementar con JavaScript avanzado');
+    // Los campos select necesitan una clase específica
+    document.querySelectorAll('select').forEach(function(select) {
+        select.classList.add('form-select');
     });
 });
 </script>
