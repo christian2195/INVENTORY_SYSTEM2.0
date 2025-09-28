@@ -53,36 +53,93 @@
 
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
-                Artículos de Despacho
-                <button type="button" class="btn btn-sm btn-success" id="add-item">➕ Agregar Artículo</button>
+                <span>Artículos de Despacho</span>
+                <button type="button" class="btn btn-sm btn-success" id="add-item">
+                    <i class="fas fa-plus me-1"></i> Agregar Artículo
+                </button>
             </div>
             <div class="card-body">
                 {{ formset.management_form }}
                 <div id="formset-container">
                     {% for item_form in formset %}
                     <div class="formset-item p-3 border rounded mb-3 bg-light">
-                        <div class="d-flex justify-content-end mb-2">
-                            <button type="button" class="btn btn-sm btn-danger remove-item">Remover</button>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0 text-muted">Artículo #{{ forloop.counter }}</h6>
+                            <button type="button" class="btn btn-sm btn-danger remove-item">
+                                <i class="fas fa-times me-1"></i> Remover
+                            </button>
                         </div>
                         {{ item_form.id }}
                         {{ item_form.DELETE }}
-                        <div class="row">
-                            <div class="col-md-5 position-relative">
-                                {% comment %} CAMPO DE BÚSQUEDA (custom field) {% endcomment %}
-                                <label class="form-label requiredField">Producto<span class="asteriskField">*</span></label>
-                                {{ item_form.product_search|as_crispy_field }}
-                                {% comment %} CAMPO ID (hidden field) {% endcomment %}
-                                {{ item_form.product }} 
-                                <div class="product-results-container list-group position-absolute w-100 shadow" style="z-index: 100;"></div>
+                        <div class="row g-3">
+                            <!-- Columna de búsqueda de producto -->
+                            <div class="col-md-4 position-relative">
+                                <label class="form-label requiredField">
+                                    Producto<span class="asteriskField">*</span>
+                                </label>
+                                {{ item_form.product_search }}
+                                {{ item_form.product }}
+                                <div class="product-results-container list-group position-absolute w-100 shadow" style="z-index: 1050; display: none;"></div>
+                                {% if item_form.product_search.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ item_form.product_search.errors }}
+                                </div>
+                                {% endif %}
                             </div>
-                            <div class="col-md-2">{{ item_form.quantity|as_crispy_field }}</div>
-                            <div class="col-md-2">{{ item_form.unit_price|as_crispy_field }}</div>
-                            <div class="col-md-3">{{ item_form.product_description|as_crispy_field }}</div>
+                            
+                            <!-- Columna de cantidad -->
+                            <div class="col-md-2">
+                                {{ item_form.quantity|as_crispy_field }}
+                            </div>
+                            
+                            <!-- Columna de precio unitario -->
+                            <div class="col-md-2">
+                                {{ item_form.unit_price|as_crispy_field }}
+                            </div>
+                            
+                            <!-- Columna de descripción -->
+                            <div class="col-md-2">
+                                {{ item_form.product_description|as_crispy_field }}
+                            </div>
+                            
+                            <!-- Columna de stock disponible -->
+                            <div class="col-md-2">
+                                {{ item_form.current_stock|as_crispy_field }}
+                            </div>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6">{{ item_form.brand|as_crispy_field }}</div>
-                            <div class="col-md-6">{{ item_form.model|as_crispy_field }}</div>
+                        
+                        <div class="row g-3 mt-2">
+                            <!-- Columna de marca -->
+                            <div class="col-md-6">
+                                {{ item_form.brand|as_crispy_field }}
+                            </div>
+                            
+                            <!-- Columna de modelo -->
+                            <div class="col-md-6">
+                                {{ item_form.model|as_crispy_field }}
+                            </div>
                         </div>
+                        
+                        <!-- Alerta de stock insuficiente -->
+                        <div class="stock-alert mt-2" style="display: none;">
+                            <div class="alert alert-danger py-2 mb-0">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                <span class="stock-message"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Mostrar errores del formulario -->
+                        {% if item_form.errors %}
+                        <div class="alert alert-danger mt-2">
+                            {% for field, errors in item_form.errors.items %}
+                                {% if field != '__all__' %}
+                                    {% for error in errors %}
+                                        <div class="small">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>
@@ -90,32 +147,76 @@
         </div>
 
         <div class="text-end">
-            <button type="submit" class="btn btn-primary btn-lg">Guardar Nota de Despacho</button>
+            <a href="{% url 'dispatch_notes:list' %}" class="btn btn-secondary me-2">
+                <i class="fas fa-times me-1"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save me-1"></i> Guardar Nota de Despacho
+            </button>
         </div>
     </form>
 </div>
 
 <template id="empty-form-template">
     <div class="formset-item p-3 border rounded mb-3 bg-light">
-        <div class="d-flex justify-content-end mb-2">
-            <button type="button" class="btn btn-sm btn-danger remove-item">Remover</button>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0 text-muted">Artículo Nuevo</h6>
+            <button type="button" class="btn btn-sm btn-danger remove-item">
+                <i class="fas fa-times me-1"></i> Remover
+            </button>
         </div>
         {{ formset.empty_form.id }}
         {{ formset.empty_form.DELETE }}
-        <div class="row">
-            <div class="col-md-5 position-relative">
-                <label class="form-label requiredField">Producto<span class="asteriskField">*</span></label>
-                {{ formset.empty_form.product_search|as_crispy_field }}
+        <div class="row g-3">
+            <!-- Columna de búsqueda de producto -->
+            <div class="col-md-4 position-relative">
+                <label class="form-label requiredField">
+                    Producto<span class="asteriskField">*</span>
+                </label>
+                {{ formset.empty_form.product_search }}
                 {{ formset.empty_form.product }}
-                <div class="product-results-container list-group position-absolute w-100 shadow" style="z-index: 100;"></div>
+                <div class="product-results-container list-group position-absolute w-100 shadow" style="z-index: 1050; display: none;"></div>
             </div>
-            <div class="col-md-2">{{ formset.empty_form.quantity|as_crispy_field }}</div>
-            <div class="col-md-2">{{ formset.empty_form.unit_price|as_crispy_field }}</div>
-            <div class="col-md-3">{{ formset.empty_form.product_description|as_crispy_field }}</div>
+            
+            <!-- Columna de cantidad -->
+            <div class="col-md-2">
+                {{ formset.empty_form.quantity|as_crispy_field }}
+            </div>
+            
+            <!-- Columna de precio unitario -->
+            <div class="col-md-2">
+                {{ formset.empty_form.unit_price|as_crispy_field }}
+            </div>
+            
+            <!-- Columna de descripción -->
+            <div class="col-md-2">
+                {{ formset.empty_form.product_description|as_crispy_field }}
+            </div>
+            
+            <!-- Columna de stock disponible -->
+            <div class="col-md-2">
+                {{ formset.empty_form.current_stock|as_crispy_field }}
+            </div>
         </div>
-        <div class="row">
-            <div class="col-md-6">{{ formset.empty_form.brand|as_crispy_field }}</div>
-            <div class="col-md-6">{{ formset.empty_form.model|as_crispy_field }}</div>
+        
+        <div class="row g-3 mt-2">
+            <!-- Columna de marca -->
+            <div class="col-md-6">
+                {{ formset.empty_form.brand|as_crispy_field }}
+            </div>
+            
+            <!-- Columna de modelo -->
+            <div class="col-md-6">
+                {{ formset.empty_form.model|as_crispy_field }}
+            </div>
+        </div>
+        
+        <!-- Alerta de stock insuficiente -->
+        <div class="stock-alert mt-2" style="display: none;">
+            <div class="alert alert-danger py-2 mb-0">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                <span class="stock-message"></span>
+            </div>
         </div>
     </div>
 </template>
@@ -139,7 +240,76 @@
                     const newId = input.id.replace(/-\d+-/g, `-${index}-`);
                     input.id = newId;
                 });
+                
+                // Actualizar el número del artículo
+                const title = form.querySelector('h6');
+                if (title) {
+                    title.textContent = `Artículo #${index + 1}`;
+                }
             });
+        }
+
+        // --- NUEVA FUNCIÓN: Validar stock en tiempo real ---
+        function validateStock(formElement) {
+            const productId = formElement.querySelector('[name$="-product"]').value;
+            const quantityInput = formElement.querySelector('[name$="-quantity"]');
+            const stockDisplay = formElement.querySelector('[name$="-current_stock"]');
+            const stockAlert = formElement.querySelector('.stock-alert');
+            const stockMessage = formElement.querySelector('.stock-message');
+            
+            if (!productId || !quantityInput.value) {
+                if (stockAlert) stockAlert.style.display = 'none';
+                if (quantityInput) quantityInput.classList.remove('is-invalid');
+                return;
+            }
+            
+            const quantity = parseInt(quantityInput.value) || 0;
+            
+            // Obtener información del producto desde la API
+            fetch(`{% url 'dispatch_notes:product_search_api' %}?id=${productId}`)
+                .then(response => response.json())
+                .then(products => {
+                    if (products.length > 0) {
+                        const product = products[0];
+                        const currentStock = product.current_stock || 0;
+                        
+                        // Actualizar display de stock
+                        if (stockDisplay) {
+                            stockDisplay.value = `${currentStock} unidades`;
+                            
+                            // Cambiar color según stock
+                            if (currentStock === 0) {
+                                stockDisplay.classList.add('text-danger');
+                                stockDisplay.classList.remove('text-success');
+                            } else if (currentStock < 10) {
+                                stockDisplay.classList.add('text-warning');
+                                stockDisplay.classList.remove('text-success');
+                            } else {
+                                stockDisplay.classList.add('text-success');
+                                stockDisplay.classList.remove('text-danger', 'text-warning');
+                            }
+                        }
+                        
+                        // Mostrar alerta si el stock es insuficiente
+                        if (quantity > currentStock) {
+                            if (stockMessage) {
+                                stockMessage.textContent = `Stock insuficiente. Disponible: ${currentStock}, Solicitado: ${quantity}`;
+                            }
+                            if (stockAlert) {
+                                stockAlert.style.display = 'block';
+                            }
+                            if (quantityInput) {
+                                quantityInput.classList.add('is-invalid');
+                            }
+                        } else {
+                            if (stockAlert) stockAlert.style.display = 'none';
+                            if (quantityInput) quantityInput.classList.remove('is-invalid');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al validar stock:', error);
+                });
         }
 
         // --- MANEJO DE FORMSET (Agregar/Remover) ---
@@ -152,25 +322,29 @@
             
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = newFormHtml.trim();
-            formsetContainer.appendChild(tempDiv.firstChild);
-
+            const newForm = tempDiv.firstChild;
+            
+            formsetContainer.appendChild(newForm);
             totalForms.value = currentTotalForms + 1;
-            attachSearchListeners(formsetContainer.lastElementChild);
+            
+            // Reindexar todos los formularios
+            reindexForms();
+            
+            // Adjuntar listeners al nuevo formulario
+            attachSearchListeners(newForm);
         });
 
         // 2. Botón Remover Artículo (Delegación de eventos)
         formsetContainer.addEventListener('click', (e) => {
-            if (e.target.classList.contains('remove-item')) {
-                const formToRemove = e.target.closest('.formset-item');
+            if (e.target.classList.contains('remove-item') || e.target.closest('.remove-item')) {
+                const button = e.target.classList.contains('remove-item') ? e.target : e.target.closest('.remove-item');
+                const formToRemove = button.closest('.formset-item');
                 if (formToRemove) {
-                    // Marcar para eliminación si es un formulario existente (tiene un ID), si no, simplemente remover
                     const deleteInput = formToRemove.querySelector('[name$="-DELETE"]');
                     if (deleteInput) {
                         deleteInput.checked = true;
-                        // Ocultar el formulario en lugar de removerlo completamente para mantener la validación del formset
                         formToRemove.style.display = 'none'; 
                     } else {
-                        // Si es una fila nueva, se puede eliminar directamente y reindexar
                         formToRemove.remove();
                         reindexForms();
                     }
@@ -178,83 +352,130 @@
             }
         });
         
-        // --- MANEJO DE BÚSQUEDA DE PRODUCTOS (AJAX) ---
+        // --- MANEJO DE BÚSQUEDA DE PRODUCTOS (AJAX) MEJORADO ---
         
-        // Función para adjuntar el listener de búsqueda a un formulario
         function attachSearchListeners(formElement) {
             const searchInput = formElement.querySelector('[name$="-product_search"]');
             const hiddenIdInput = formElement.querySelector('[name$="-product"]');
             const descInput = formElement.querySelector('[name$="-product_description"]');
             const priceInput = formElement.querySelector('[name$="-unit_price"]');
+            const stockDisplay = formElement.querySelector('[name$="-current_stock"]');
+            const quantityInput = formElement.querySelector('[name$="-quantity"]');
             const resultsContainer = formElement.querySelector('.product-results-container');
             
             if (!searchInput) return;
 
+            // Función para mostrar/ocultar resultados
+            function showResults() {
+                if (resultsContainer) resultsContainer.style.display = 'block';
+            }
+            
+            function hideResults() {
+                if (resultsContainer) resultsContainer.style.display = 'none';
+            }
+
             searchInput.addEventListener('input', (e) => {
                 const query = e.target.value.trim();
                 
-                // Limpiar el temporizador anterior
                 clearTimeout(searchTimeout);
                 
-                if (query.length < 3) {
-                    resultsContainer.innerHTML = '';
+                if (query.length < 2) {
+                    hideResults();
                     return;
                 }
                 
-                // Establecer un nuevo temporizador
                 searchTimeout = setTimeout(() => {
-                    // Realizar la petición AJAX
-                    fetch(`{% url 'dispatch_notes:product_search_api' %}?q=${query}`)
+                    fetch(`{% url 'dispatch_notes:product_search_api' %}?q=${encodeURIComponent(query)}`)
                         .then(response => response.json())
                         .then(data => {
-                            resultsContainer.innerHTML = ''; // Limpiar resultados anteriores
+                            if (!resultsContainer) return;
+                            
+                            resultsContainer.innerHTML = '';
                             
                             if (data.length > 0) {
                                 data.forEach(product => {
                                     const item = document.createElement('a');
                                     item.href = '#';
                                     item.classList.add('list-group-item', 'list-group-item-action');
-                                    item.textContent = `${product.code} - ${product.description}`;
+                                    
+                                    // Mostrar stock en los resultados
+                                    const stockInfo = product.current_stock !== undefined ? 
+                                        ` (Stock: ${product.current_stock})` : '';
+                                    const stockClass = product.current_stock === 0 ? 'text-danger' : 
+                                                     product.current_stock < 10 ? 'text-warning' : 'text-success';
+                                    
+                                    item.innerHTML = `
+                                        <div>
+                                            <strong>${product.product_code}</strong> - ${product.description}
+                                            <br>
+                                            <small class="${stockClass}">
+                                                Stock: ${product.current_stock || 0} | Precio: Bs. ${product.unit_price || '0.00'}
+                                            </small>
+                                        </div>
+                                    `;
                                     
                                     item.addEventListener('click', (event) => {
                                         event.preventDefault();
                                         
                                         // Rellenar campos
-                                        searchInput.value = product.code; // Rellenar búsqueda con el código
-                                        hiddenIdInput.value = product.id; // Asignar el ID al campo oculto
-                                        descInput.value = product.description; // Rellenar descripción del ítem
-                                        priceInput.value = product.unit_price || '0.00'; 
+                                        searchInput.value = product.product_code;
+                                        hiddenIdInput.value = product.id;
+                                        if (descInput) descInput.value = product.description;
+                                        if (priceInput) priceInput.value = product.unit_price || '0.00';
                                         
-                                        // Limpiar resultados
-                                        resultsContainer.innerHTML = '';
+                                        // Actualizar stock
+                                        if (stockDisplay) {
+                                            stockDisplay.value = `${product.current_stock || 0} unidades`;
+                                        }
+                                        
+                                        // Validar stock automáticamente si hay cantidad
+                                        if (quantityInput && quantityInput.value) {
+                                            validateStock(formElement);
+                                        }
+                                        
+                                        hideResults();
                                     });
                                     
                                     resultsContainer.appendChild(item);
                                 });
+                                showResults();
                             } else {
-                                resultsContainer.innerHTML = '<div class="list-group-item">No se encontraron productos.</div>';
+                                resultsContainer.innerHTML = '<div class="list-group-item text-muted">No se encontraron productos.</div>';
+                                showResults();
                             }
                         })
                         .catch(error => {
                             console.error('Error en la búsqueda de productos:', error);
-                            resultsContainer.innerHTML = '<div class="list-group-item list-group-item-danger">Error al buscar.</div>';
+                            if (resultsContainer) {
+                                resultsContainer.innerHTML = '<div class="list-group-item list-group-item-danger">Error al buscar productos.</div>';
+                                showResults();
+                            }
                         });
-                }, 300); // 300ms de retraso
+                }, 300);
             });
             
-            // Limpiar resultados si se pierde el foco
-            searchInput.addEventListener('blur', () => {
-                // Pequeño retraso para permitir el clic en un resultado antes de que se oculte
-                setTimeout(() => {
-                    resultsContainer.innerHTML = '';
-                }, 200);
-            });
-
-            // Función para re-mostrar resultados si el input está enfocado y tiene texto
+            // NUEVO: Validar stock cuando cambia la cantidad
+            if (quantityInput) {
+                quantityInput.addEventListener('input', () => {
+                    validateStock(formElement);
+                });
+                
+                quantityInput.addEventListener('blur', () => {
+                    validateStock(formElement);
+                });
+            }
+            
+            // Manejar foco y blur para resultados
             searchInput.addEventListener('focus', (e) => {
-                if (e.target.value.trim().length >= 3) {
-                    // Simular un evento de 'input' para disparar la búsqueda de nuevo
+                if (e.target.value.trim().length >= 2) {
                     e.target.dispatchEvent(new Event('input'));
+                }
+            });
+            
+            // Ocultar resultados al hacer clic fuera
+            document.addEventListener('click', (e) => {
+                if (!formElement.contains(e.target)) {
+                    hideResults();
                 }
             });
         }
@@ -262,6 +483,44 @@
         // Adjuntar listeners a los formularios existentes al cargar la página
         formsetContainer.querySelectorAll('.formset-item').forEach(attachSearchListeners);
         
+        // Validar stock inicial para formularios existentes
+        formsetContainer.querySelectorAll('.formset-item').forEach(formElement => {
+            const productId = formElement.querySelector('[name$="-product"]').value;
+            if (productId) {
+                validateStock(formElement);
+            }
+        });
+        
     });
 </script>
+
+<style>
+    .is-invalid {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    }
+    .stock-alert .alert {
+        margin-bottom: 0;
+        font-size: 0.875rem;
+    }
+    .product-results-container {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    .formset-item {
+        transition: all 0.3s ease;
+    }
+    .formset-item:hover {
+        border-color: #0d6efd !important;
+    }
+    .text-danger {
+        color: #dc3545 !important;
+    }
+    .text-warning {
+        color: #ffc107 !important;
+    }
+    .text-success {
+        color: #198754 !important;
+    }
+</style>
 {% endblock %}
