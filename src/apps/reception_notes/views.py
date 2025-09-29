@@ -68,6 +68,14 @@ class ReceptionNoteUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'reception_notes/reception_form.html'
     success_url = reverse_lazy('reception_notes:list')
     
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.POST:
+            context['formset'] = ReceptionItemFormSet(self.request.POST, instance=self.object)
+        else:
+            context['formset'] = ReceptionItemFormSet(instance=self.object)
+        return context
+    
     def form_valid(self, form):
         context = self.get_context_data()
         formset = context['formset']
@@ -96,9 +104,17 @@ def validate_reception_note(request, pk):
 
         # 2. Iterar sobre cada item y actualizar el inventario
         for item in reception_note.items.all():
+            # Usar F() expression para evitar condiciones de carrera
             item.product.current_stock = F('current_stock') + item.quantity
             item.product.save(update_fields=['current_stock'])
+            
+            # Actualizar el producto para cargar el nuevo valor
+            item.product.refresh_from_db()
 
+        # Mensaje de éxito
+        messages.success(request, f'Nota de recepción #{reception_note.receipt_number} validada correctamente. Inventario actualizado.')
+        
         return redirect('reception_notes:detail', pk=reception_note.pk)
     
+    messages.error(request, 'No se pudo validar la nota de recepción.')
     return redirect('reception_notes:detail', pk=reception_note.pk)

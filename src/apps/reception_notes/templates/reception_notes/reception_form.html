@@ -3,6 +3,17 @@
 {% load static %}
 {% block content %}
 <div class="container mt-4">
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="card shadow-sm">
         <div class="card-header bg-success text-white">
             <h4 class="mb-0">
@@ -34,6 +45,7 @@
                         {% endif %}
                         
                         {% for field in form %}
+                            {% if field.name != 'notes' %}
                             <div class="mb-3">
                                 <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
                                 {{ field }}
@@ -44,6 +56,7 @@
                                     <div class="text-danger small">{{ field.errors }}</div>
                                 {% endif %}
                             </div>
+                            {% endif %}
                         {% endfor %}
                     </div>
                     <div class="col-md-6">
@@ -179,6 +192,21 @@
 .bg-light {
     background-color: #f8f9fa !important;
 }
+
+/* Mejorar apariencia de campos de formulario Django */
+select, input[type="number"], input[type="text"], textarea {
+    width: 100%;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+select:focus, input[type="number"]:focus, input[type="text"]:focus, textarea:focus {
+    border-color: #198754;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+}
 </style>
 
 <script>
@@ -260,6 +288,80 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Funcionalidad para agregar más productos
+    document.getElementById('add-more').addEventListener('click', function() {
+        const formsetContainer = document.getElementById('formset-container');
+        const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+        const formCount = parseInt(totalForms.value);
+        
+        if (!formsetContainer || !totalForms) {
+            alert('Error: No se pudo encontrar el contenedor de formularios.');
+            return;
+        }
+        
+        // Encontrar la última fila del formset
+        const formRows = formsetContainer.querySelectorAll('.form-row-item');
+        if (formRows.length === 0) {
+            alert('Error: No hay filas de formulario disponibles.');
+            return;
+        }
+        
+        const lastForm = formRows[formRows.length - 1];
+        const newForm = lastForm.cloneNode(true);
+        
+        // Limpiar los valores del nuevo formulario
+        newForm.querySelectorAll('input').forEach(input => {
+            if (input.type === 'text' || input.type === 'number') {
+                input.value = '';
+            }
+            if (input.type === 'checkbox') {
+                input.checked = false;
+            }
+        });
+        
+        // Actualizar el campo de subtotal
+        const subtotalField = newForm.querySelector('.subtotal-field');
+        if (subtotalField) {
+            subtotalField.value = '$0.00';
+        }
+        
+        // Actualizar los nombres e IDs de los campos
+        newForm.querySelectorAll('[name], [id]').forEach(element => {
+            const name = element.getAttribute('name');
+            const id = element.getAttribute('id');
+            
+            if (name && name.includes('__prefix__')) {
+                const newName = name.replace(/__prefix__/, formCount);
+                element.setAttribute('name', newName);
+            } else if (name && /-\d+-/.test(name)) {
+                const newName = name.replace(/-\d+-/, `-${formCount}-`);
+                element.setAttribute('name', newName);
+            }
+            
+            if (id && id.includes('__prefix__')) {
+                const newId = id.replace(/__prefix__/, formCount);
+                element.setAttribute('id', newId);
+            } else if (id && /-\d+-/.test(id)) {
+                const newId = id.replace(/-\d+-/, `-${formCount}-`);
+                element.setAttribute('id', newId);
+            }
+        });
+        
+        // Insertar el nuevo formulario
+        formsetContainer.appendChild(newForm);
+        
+        // Actualizar el contador total de formularios
+        totalForms.value = formCount + 1;
+        
+        // Recalcular subtotales
+        calculateSubtotals();
+        
+        // Re-aplicar event listeners a los nuevos campos
+        newForm.querySelectorAll('input[name*="quantity"], input[name*="unit_price"]').forEach(input => {
+            input.addEventListener('input', calculateSubtotals);
+        });
+    });
+    
     // Escuchar cambios en cantidad y precio
     document.addEventListener('input', function(e) {
         if (e.target.name.includes('quantity') || e.target.name.includes('unit_price') || 
@@ -268,39 +370,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Funcionalidad para agregar más productos (simulada)
-    document.getElementById('add-more').addEventListener('click', function() {
-        const formsetContainer = document.getElementById('formset-container');
-        const totalForms = document.getElementById('id_items-TOTAL_FORMS');
-        
-        if (totalForms && formsetContainer) {
-            // En una implementación real, aquí se clonaría la última fila del formset
-            alert('Para agregar más productos, guarde el formulario primero. En una implementación completa, esto agregaría dinámicamente más filas.');
-        }
-    });
-    
     // Validación antes de enviar el formulario
     document.getElementById('reception-form').addEventListener('submit', function(e) {
         let hasProducts = false;
+        let hasErrors = false;
         
         document.querySelectorAll('.form-row-item').forEach(function(row) {
             const quantityInput = row.querySelector('input[name*="quantity"]');
             const priceInput = row.querySelector('input[name*="unit_price"]');
+            const productSelect = row.querySelector('select[name*="product"]');
             const deleteCheckbox = row.querySelector('input[type="checkbox"][name*="DELETE"]');
             
             if (!deleteCheckbox || !deleteCheckbox.checked) {
                 const quantity = parseFloat(quantityInput?.value) || 0;
                 const price = parseFloat(priceInput?.value) || 0;
+                const product = productSelect?.value || '';
                 
-                if (quantity > 0 && price > 0) {
+                if (quantity > 0 && price > 0 && product) {
                     hasProducts = true;
+                } else if ((quantity > 0 || price > 0) && (!product || quantity <= 0 || price <= 0)) {
+                    // Tiene datos parciales pero incompletos
+                    hasErrors = true;
+                    row.style.borderLeftColor = '#dc3545';
                 }
             }
         });
         
         if (!hasProducts) {
             e.preventDefault();
-            alert('Debe agregar al menos un producto válido antes de guardar.');
+            alert('Error: Debe agregar al menos un producto válido (con producto seleccionado, cantidad mayor a 0 y precio mayor a 0) antes de guardar.');
+        } else if (hasErrors) {
+            if (!confirm('Algunos productos tienen datos incompletos. ¿Desea guardar de todas formas? Los productos incompletos no se guardarán.')) {
+                e.preventDefault();
+            }
         }
     });
     

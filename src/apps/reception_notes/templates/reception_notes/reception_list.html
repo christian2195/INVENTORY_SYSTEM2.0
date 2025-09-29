@@ -3,6 +3,17 @@
 {% load static %}
 {% block content %}
 <div class="container mt-4">
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>
             <i class="fas fa-clipboard-list me-2 text-success"></i>Notas de Recepción
@@ -35,10 +46,10 @@
                         {% for reception in receptions %}
                         <tr>
                             <td>
-                                <strong>#{{ reception.reception_number }}</strong>
+                                <strong>#{{ reception.receipt_number }}</strong>
                             </td>
                             <td>{{ reception.supplier.name }}</td>
-                            <td>{{ reception.reception_date|date:"d M Y" }}</td>
+                            <td>{{ reception.receipt_date|date:"d M Y" }}</td>
                             <td>
                                 <span class="badge bg-primary">{{ reception.items.count }}</span>
                             </td>
