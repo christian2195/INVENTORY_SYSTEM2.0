@@ -1,20 +1,294 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
 <div class="container mt-4">
-    <h2>Crear Nueva Orden</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <hr>
-        <h3>Productos de la Orden</h3>
-        {{ formset.management_form }}
-        {% for form in formset %}
-            <div class="form-row">
-                {{ form.as_p }}
-            </div>
-        {% endfor %}
-        <button type="submit" class="btn btn-primary">Guardar</button>
-        <a href="{% url 'orders:list' %}" class="btn btn-secondary">Cancelar</a>
-    </form>
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-plus-circle me-2"></i>
+                {% if object %}Editar{% else %}Crear{% endif %} Orden de Compra
+            </h4>
+        </div>
+        <div class="card-body">
+            <form method="post" id="order-form" novalidate>
+                {% csrf_token %}
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>Información Principal</h6>
+                        
+                        <!-- Número de orden -->
+                        <div class="mb-3">
+                            <label class="form-label">Número de Orden</label>
+                            {% if object %}
+                            <input type="text" class="form-control" value="{{ object.order_number }}" readonly>
+                            {% else %}
+                            <input type="text" class="form-control" value="Se generará automáticamente" readonly>
+                            <div class="form-text">Número generado automáticamente al guardar</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Campos del formulario principal -->
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                                <div class="text-danger small">{{ field.errors }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Información del Sistema</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <strong>Estado:</strong>
+                                    <span class="badge bg-warning ms-2">Pendiente</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Creado por:</strong>
+                                    <span class="ms-2">{{ user.get_full_name|default:user.username }}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Fecha:</strong>
+                                    <span class="ms-2">{{ now|date:"d M Y H:i" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+                
+                <h5 class="mb-3">
+                    <i class="fas fa-boxes me-2"></i>Productos de la Orden
+                </h5>
+                
+                {{ formset.management_form }}
+                <div id="formset-container">
+                    {% for form in formset %}
+                    <div class="card mb-3 form-row-item">
+                        <div class="card-body">
+                            <div class="row g-3 align-items-end">
+                                <!-- Campos ocultos -->
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                                
+                                <!-- Producto -->
+                                <div class="col-md-4">
+                                    <label for="{{ form.product.id_for_label }}" class="form-label small">Producto</label>
+                                    {{ form.product }}
+                                    {% if form.product.errors %}
+                                        <div class="text-danger small">{{ form.product.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Cantidad -->
+                                <div class="col-md-2">
+                                    <label for="{{ form.quantity.id_for_label }}" class="form-label small">Cantidad</label>
+                                    {{ form.quantity }}
+                                    {% if form.quantity.errors %}
+                                        <div class="text-danger small">{{ form.quantity.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Precio Unitario -->
+                                <div class="col-md-3">
+                                    <label for="{{ form.unit_price.id_for_label }}" class="form-label small">Precio Unitario</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        {{ form.unit_price }}
+                                    </div>
+                                    {% if form.unit_price.errors %}
+                                        <div class="text-danger small">{{ form.unit_price.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Subtotal -->
+                                <div class="col-md-2">
+                                    <label class="form-label small">Subtotal</label>
+                                    <input type="text" class="form-control subtotal-field" readonly value="$0.00">
+                                </div>
+                                
+                                <!-- Eliminar -->
+                                {% if form.DELETE %}
+                                <div class="col-md-1">
+                                    <label class="form-label small">&nbsp;</label>
+                                    <div class="form-check pt-2">
+                                        {{ form.DELETE }}
+                                        <label for="{{ form.DELETE.id_for_label }}" class="form-check-label text-danger small">
+                                            Eliminar
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Total -->
+                <div class="row mt-4">
+                    <div class="col-md-6 offset-md-6">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h5 class="mb-0">Total: <span id="order-total">$0.00</span></h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <button type="button" class="btn btn-outline-primary" id="add-more">
+                        <i class="fas fa-plus me-1"></i> Agregar otro producto
+                    </button>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i> Guardar Orden
+                        </button>
+                        <a href="{% url 'orders:list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i> Cancelar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
+
+<style>
+.form-row-item {
+    border-left: 4px solid #0d6efd;
+    transition: all 0.3s ease;
+}
+
+.form-row-item:hover {
+    border-left-color: #198754;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.subtotal-field, #order-total {
+    font-weight: bold;
+    color: #198754;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mejorar apariencia de campos
+    document.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function(element) {
+        if (element.type !== 'checkbox') {
+            element.classList.add('form-control');
+        }
+    });
+    
+    document.querySelectorAll('select').forEach(function(select) {
+        select.classList.add('form-select');
+    });
+    
+    document.querySelectorAll('input[type="checkbox"]').forEach(function(checkbox) {
+        checkbox.classList.add('form-check-input');
+    });
+
+    // Calcular subtotales y total
+    function calculateTotals() {
+        let orderTotal = 0;
+        
+        document.querySelectorAll('.form-row-item').forEach(function(row) {
+            const quantityInput = row.querySelector('.quantity-input');
+            const priceInput = row.querySelector('.price-input');
+            const subtotalField = row.querySelector('.subtotal-field');
+            const deleteCheckbox = row.querySelector('input[type="checkbox"][name*="DELETE"]');
+            
+            if (deleteCheckbox && deleteCheckbox.checked) {
+                subtotalField.value = '$0.00';
+                return;
+            }
+            
+            const quantity = parseFloat(quantityInput?.value) || 0;
+            const price = parseFloat(priceInput?.value) || 0;
+            const subtotal = quantity * price;
+            
+            if (subtotalField) {
+                subtotalField.value = '$' + subtotal.toFixed(2);
+            }
+            
+            orderTotal += subtotal;
+        });
+        
+        document.getElementById('order-total').textContent = '$' + orderTotal.toFixed(2);
+    }
+
+    // Event listeners para calcular en tiempo real
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('quantity-input') || e.target.classList.contains('price-input')) {
+            calculateTotals();
+        }
+    });
+
+    // Cargar precio del producto automáticamente
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('product-select')) {
+            const productId = e.target.value;
+            if (productId) {
+                fetch(`/orders/api/producto/${productId}/precio/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const row = e.target.closest('.form-row-item');
+                        const priceInput = row.querySelector('.price-input');
+                        if (priceInput && !priceInput.value) {
+                            priceInput.value = data.price;
+                            calculateTotals();
+                        }
+                    });
+            }
+        }
+    });
+
+    // Agregar más productos
+    document.getElementById('add-more').addEventListener('click', function() {
+        const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+        const formContainer = document.getElementById('formset-container');
+        const formCount = parseInt(totalForms.value);
+        
+        // Clonar la última forma
+        const lastForm = formContainer.lastElementChild.cloneNode(true);
+        
+        // Actualizar índices
+        lastForm.querySelectorAll('input, select').forEach(function(input) {
+            const name = input.name.replace(/items-\d+-/, `items-${formCount}-`);
+            input.name = name;
+            input.id = `id_${name}`;
+            
+            // Limpiar valores
+            if (input.type !== 'hidden' && !input.name.includes('DELETE')) {
+                input.value = '';
+            }
+        });
+        
+        // Actualizar labels
+        lastForm.querySelectorAll('label').forEach(function(label) {
+            const forAttr = label.getAttribute('for');
+            if (forAttr) {
+                label.setAttribute('for', forAttr.replace(/items-\d+-/, `items-${formCount}-`));
+            }
+        });
+        
+        formContainer.appendChild(lastForm);
+        totalForms.value = formCount + 1;
+        calculateTotals();
+    });
+
+    // Calcular totales iniciales
+    calculateTotals();
+});
+</script>
 {% endblock %}

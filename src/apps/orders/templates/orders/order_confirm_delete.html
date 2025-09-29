@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Confirmar Eliminación
+            </h4>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <h5 class="alert-heading">¿Estás seguro de que deseas eliminar esta orden?</h5>
+                <p class="mb-0">
+                    <strong>Orden #{{ object.order_number }}</strong><br>
+                    Cliente: {{ object.client.name|default:"No especificado" }}<br>
+                    Total: ${{ object.total|floatformat:2 }}
+                </p>
+            </div>
+            
+            <p class="text-muted">
+                <i class="fas fa-info-circle me-1"></i>
+                Esta acción no se puede deshacer. Se eliminarán todos los productos asociados a esta orden.
+            </p>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i> Sí, Eliminar
+                    </button>
+                    <a href="{% url 'orders:detail' object.pk %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i> Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
