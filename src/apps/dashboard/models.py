@@ -7,11 +7,17 @@ class ProductManager(models.Manager):
         Obtiene los productos cuyo stock actual es menor que el stock mínimo.
         """
         return self.get_queryset().annotate(
-            difference=F('min_stock') - F('current_stock')
-        ).filter(current_stock__lt=F('min_stock')).order_by('difference')[:limit]
+            difference=F('stock_minimo') - F('cantidad')
+        ).filter(cantidad__lt=F('stock_minimo')).order_by('difference')[:limit]
 
-# En tu modelo Product, asocia el nuevo manager
-# class Product(models.Model):
-#     ...
-#     objects = ProductManager()
-#     ...
+class DashboardSetting(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    value = models.TextField()
+    description = models.TextField(blank=True)
+    
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        verbose_name = "Configuración del Dashboard"
+        verbose_name_plural = "Configuraciones del Dashboard"

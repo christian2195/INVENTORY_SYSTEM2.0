@@ -1,99 +1,223 @@
 {% extends 'base.html' %}
 {% load humanize %}
 
+{% block title %}Dashboard - Sistema de Inventario{% endblock %}
+
 {% block content %}
-<div class="container mx-auto p-6 space-y-8 bg-gray-50 min-h-screen">
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6">
-        <h1 class="text-4xl font-extrabold text-green-800 mb-4 md:mb-0">Panel de Control</h1>
-        <div class="relative w-full md:w-1/2 lg:w-1/3">
-            <input type="text" id="product-search" placeholder="🔍 Buscar producto..." class="w-full px-4 py-3 rounded-full border border-gray-300 shadow-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
-            <ul id="product-results" class="product-results list-group hidden mt-2 absolute w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+<div class="container-fluid py-4">
+    <!-- Header con Búsqueda -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h1 class="h2 text-success fw-bold mb-3">Panel de Control</h1>
+        </div>
+        <div class="col-md-6">
+            <div class="row g-2">
+                <!-- Filtros -->
+                <div class="col-md-6">
+                    <select id="category-filter" class="form-select form-select-sm">
+                        <option value="">Todas las categorías</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <select id="stock-filter" class="form-select form-select-sm">
+                        <option value="">Todos los stocks</option>
+                        <option value="critical">Stock Crítico</option>
+                        <option value="low">Stock Bajo</option>
+                        <option value="normal">Stock Normal</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Búsqueda -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" 
+                       id="product-search" 
+                       class="form-control" 
+                       placeholder="Buscar producto por nombre, código o descripción...">
+            </div>
+            <div class="form-text">Escribe al menos 2 caracteres para buscar productos.</div>
+            <ul id="product-results" class="list-group mt-2 d-none position-absolute w-100 z-3" style="max-height: 240px; overflow-y: auto;">
                 <!-- Los resultados de la búsqueda se renderizarán aquí -->
             </ul>
         </div>
     </div>
 
     <!-- Sección de Búsqueda de Productos -->
-    <div id="product-details-card" class="hidden bg-white rounded-xl shadow-lg p-6 border-t-4 border-blue-600 transition-transform duration-300 transform scale-100 opacity-100">
-        <h2 class="text-2xl font-semibold text-blue-800 mb-4">Información del Producto</h2>
-        <div id="product-details-content" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Los detalles del producto seleccionado se mostrarán aquí -->
+    <div id="product-details-card" class="card mb-4 d-none">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-info-circle me-2"></i>Información del Producto
+            </h5>
         </div>
-        <button id="close-details-btn" class="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-colors duration-300">Cerrar</button>
+        <div class="card-body">
+            <div id="product-details-content" class="row">
+                <!-- Los detalles del producto seleccionado se mostrarán aquí -->
+            </div>
+            <button id="close-details-btn" class="btn btn-danger mt-3">
+                <i class="fas fa-times me-2"></i>Cerrar
+            </button>
+        </div>
     </div>
 
     <!-- Tarjetas de Estadísticas Principales -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-center text-center transition-transform duration-300 hover:scale-105 border-t-4 border-green-500">
-            <i class="fas fa-box text-4xl text-green-600 mb-3"></i>
-            <h3 class="text-xl font-semibold text-gray-700">Total de Productos</h3>
-            <p class="text-3xl font-bold text-gray-900">{{ total_products|intcomma }}</p>
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-success border-4 h-100">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">Total de Productos</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ total_products|intcomma }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-box fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-center text-center transition-transform duration-300 hover:scale-105 border-t-4 border-red-500">
-            <i class="fas fa-exclamation-triangle text-4xl text-red-600 mb-3"></i>
-            <h3 class="text-xl font-semibold text-gray-700">Stock Crítico</h3>
-            <p class="text-3xl font-bold text-gray-900">{{ critical_stock|intcomma }}</p>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-danger border-4 h-100">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-xs fw-bold text-danger text-uppercase mb-1">Stock Crítico</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ critical_stock|intcomma }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-center text-center transition-transform duration-300 hover:scale-105 border-t-4 border-blue-500">
-            <i class="fas fa-arrow-alt-circle-down text-4xl text-blue-600 mb-3"></i>
-            <h3 class="text-xl font-semibold text-gray-700">Entradas del Día</h3>
-            <p class="text-3xl font-bold text-gray-900">{{ today_entries|intcomma }}</p>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-primary border-4 h-100">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">Entradas del Día</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ today_entries|intcomma }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-arrow-down fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-center text-center transition-transform duration-300 hover:scale-105 border-t-4 border-yellow-500">
-            <i class="fas fa-arrow-alt-circle-up text-4xl text-yellow-600 mb-3"></i>
-            <h3 class="text-xl font-semibold text-gray-700">Salidas del Día</h3>
-            <p class="text-3xl font-bold text-gray-900">{{ today_exits|intcomma }}</p>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-warning border-4 h-100">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">Salidas del Día</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ today_exits|intcomma }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-arrow-up fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Sección de Productos con Stock Crítico -->
-    <div class="bg-white rounded-xl shadow-lg p-6 border-t-4 border-orange-500">
-        <h2 class="text-2xl font-semibold text-orange-800 mb-4">Productos con Stock Crítico</h2>
-        {% if low_stock_products %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Producto
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Código
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Stock Actual
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Stock Mínimo
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Acciones
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for product in low_stock_products %}
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ product.nombre }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ product.codigo }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-semibold">{{ product.cantidad }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ product.stock_minimo }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <a href="{% url 'dashboard:request_replenishment' product.pk %}" class="text-blue-600 hover:text-blue-900 transition-colors">Solicitar Reposición</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="card">
+        <div class="card-header bg-warning text-dark">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Productos con Stock Crítico
+                </h5>
+                <span class="badge bg-dark">{{ low_stock_products|length }} productos</span>
+            </div>
         </div>
-        {% else %}
-        <p class="text-gray-500 text-center py-4">¡No hay productos con stock crítico!</p>
-        {% endif %}
+        <div class="card-body">
+            {% if low_stock_products %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Producto</th>
+                            <th>Código</th>
+                            <th>Stock Actual</th>
+                            <th>Stock Mínimo</th>
+                            <th>Diferencia</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="low-stock-table">
+                        {% for product in low_stock_products %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-box text-muted me-3"></i>
+                                    <div>
+                                        <strong>{{ product.nombre }}</strong>
+                                        {% if product.descripcion %}
+                                        <br><small class="text-muted">{{ product.descripcion|truncatewords:5 }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="align-middle">{{ product.codigo }}</td>
+                            <td class="align-middle">
+                                <span class="badge bg-danger">{{ product.cantidad }}</span>
+                            </td>
+                            <td class="align-middle">{{ product.stock_minimo }}</td>
+                            <td class="align-middle">
+                                <span class="fw-bold {% if product.diferencia < 0 %}text-danger{% else %}text-success{% endif %}">
+                                    {{ product.diferencia }}
+                                </span>
+                            </td>
+                            <td class="align-middle">
+                                <!-- CORREGIDO: Usar el namespace 'inventory' -->
+                                <a href="{% url 'inventory:request_replenishment' product.pk %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-sync-alt me-1"></i>Solicitar Reposición
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-check-circle text-success fa-4x mb-3"></i>
+                <h5 class="text-muted">¡No hay productos con stock crítico!</h5>
+                <p class="text-muted">Todos los productos tienen stock suficiente</p>
+            </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 
+<style>
+    .card {
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('product-search');
         const resultsList = document.getElementById('product-results');
         const detailsCard = document.getElementById('product-details-card');
@@ -102,90 +226,130 @@
 
         let debounceTimeout;
 
-        searchInput.addEventListener('input', () => {
+        // Búsqueda de productos
+        searchInput.addEventListener('input', function() {
             clearTimeout(debounceTimeout);
             debounceTimeout = setTimeout(() => {
-                const query = searchInput.value;
-                if (query.length > 2) {
-                    fetch(`/dashboard/api/product-search/?query=${encodeURIComponent(query)}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            renderResults(data);
-                        })
-                        .catch(error => {
-                            console.error('Error fetching products:', error);
-                        });
-                } else {
-                    resultsList.innerHTML = '';
-                    resultsList.classList.add('hidden');
-                }
+                searchProducts(this.value);
             }, 300);
         });
 
-        const renderResults = (products) => {
+        // Cerrar detalles
+        closeBtn.addEventListener('click', function() {
+            detailsCard.classList.add('d-none');
+        });
+
+        async function searchProducts(query) {
+            if (query.length < 2) {
+                resultsList.classList.add('d-none');
+                return;
+            }
+
+            try {
+                showLoadingState();
+                // CORREGIDO: Usar la URL correcta para la búsqueda
+                const response = await fetch(`/inventario/api/product-search/?query=${encodeURIComponent(query)}`);
+                
+                if (!response.ok) throw new Error('Error en la búsqueda');
+                
+                const data = await response.json();
+                renderResults(data);
+            } catch (error) {
+                console.error('Error fetching products:', error);
+                showErrorState('Error en la búsqueda');
+            }
+        }
+
+        function showLoadingState() {
+            resultsList.innerHTML = '<li class="list-group-item text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Buscando...</li>';
+            resultsList.classList.remove('d-none');
+        }
+
+        function showErrorState(message) {
+            resultsList.innerHTML = `<li class="list-group-item text-danger"><i class="fas fa-exclamation-circle me-2"></i>${message}</li>`;
+            resultsList.classList.remove('d-none');
+        }
+
+        function renderResults(products) {
             resultsList.innerHTML = '';
             if (products.length > 0) {
                 products.forEach(product => {
                     const listItem = document.createElement('li');
-                    listItem.classList.add('list-group-item', 'p-3', 'hover:bg-gray-100', 'cursor-pointer');
+                    listItem.className = 'list-group-item list-group-item-action';
                     listItem.innerHTML = `
-                        <p class="font-semibold text-gray-800">${product.nombre}</p>
-                        <p class="text-sm text-gray-500">Stock: ${product.cantidad} | Precio: Bs. ${product.precio_unitario}</p>
+                        <p class="fw-semibold mb-1">${product.nombre}</p>
+                        <p class="text-muted small mb-0">Stock: ${product.cantidad} | Precio: Bs. ${product.precio_unitario}</p>
                     `;
                     listItem.addEventListener('click', () => {
                         showProductDetails(product);
-                        resultsList.classList.add('hidden');
-                        searchInput.value = ''; // Limpiar el campo de búsqueda
+                        resultsList.classList.add('d-none');
+                        searchInput.value = '';
                     });
                     resultsList.appendChild(listItem);
                 });
-                resultsList.classList.remove('hidden');
+                resultsList.classList.remove('d-none');
             } else {
                 const noResultsItem = document.createElement('li');
-                noResultsItem.classList.add('list-group-item', 'p-3', 'text-gray-500');
-                noResultsItem.textContent = 'No se encontraron productos.';
+                noResultsItem.className = 'list-group-item text-muted';
+                noResultsItem.innerHTML = '<i class="fas fa-search me-2"></i>No se encontraron productos.';
                 resultsList.appendChild(noResultsItem);
-                resultsList.classList.remove('hidden');
+                resultsList.classList.remove('d-none');
             }
-        };
+        }
 
-        const showProductDetails = (product) => {
+        function showProductDetails(product) {
+            const stockStatus = product.cantidad <= product.stock_minimo ? 
+                '<span class="badge bg-danger">CRÍTICO</span>' : 
+                '<span class="badge bg-success">NORMAL</span>';
+
             detailsContent.innerHTML = `
-                <div>
-                    <h3 class="font-bold text-gray-700">Nombre</h3>
-                    <p class="text-gray-900">${product.nombre}</p>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-uppercase small text-muted">Nombre</label>
+                        <p class="fs-6 mb-0">${product.nombre}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-uppercase small text-muted">Código</label>
+                        <p class="mb-0">${product.codigo}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-uppercase small text-muted">Estado del Stock</label>
+                        <p class="mb-0">${stockStatus}</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 class="font-bold text-gray-700">Código</h3>
-                    <p class="text-gray-900">${product.codigo}</p>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-uppercase small text-muted">Cantidad Disponible</label>
+                        <p class="fs-5 fw-bold mb-0">${product.cantidad} ${product.unidad_medida_abreviatura}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-uppercase small text-muted">Precio Unitario</label>
+                        <p class="fs-5 fw-bold mb-0">Bs. ${product.precio_unitario}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-uppercase small text-muted">Stock Mínimo</label>
+                        <p class="mb-0">${product.stock_minimo}</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 class="font-bold text-gray-700">Cantidad Disponible</h3>
-                    <p class="text-gray-900">${product.cantidad} ${product.unidad_medida_abreviatura}</p>
-                </div>
-                <div>
-                    <h3 class="font-bold text-gray-700">Precio Unitario</h3>
-                    <p class="text-gray-900">Bs. ${product.precio_unitario}</p>
-                </div>
-                <div>
-                    <h3 class="font-bold text-gray-700">Descripción</h3>
-                    <p class="text-gray-900">${product.descripcion || 'N/A'}</p>
-                </div>
-                <div>
-                    <h3 class="font-bold text-gray-700">Categoría</h3>
-                    <p class="text-gray-900">${product.categoria_nombre || 'N/A'}</p>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-uppercase small text-muted">Descripción</label>
+                        <p class="mb-0">${product.descripcion || 'N/A'}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-uppercase small text-muted">Categoría</label>
+                        <p class="mb-0">${product.categoria_nombre || 'N/A'}</p>
+                    </div>
                 </div>
             `;
-            detailsCard.classList.remove('hidden');
-        };
+            detailsCard.classList.remove('d-none');
+            detailsCard.scrollIntoView({ behavior: 'smooth' });
+        }
 
-        closeBtn.addEventListener('click', () => {
-            detailsCard.classList.add('hidden');
-        });
-
-        document.addEventListener('click', (event) => {
+        // Cerrar resultados al hacer clic fuera
+        document.addEventListener('click', function(event) {
             if (!searchInput.contains(event.target) && !resultsList.contains(event.target)) {
-                resultsList.classList.add('hidden');
+                resultsList.classList.add('d-none');
             }
         });
     });

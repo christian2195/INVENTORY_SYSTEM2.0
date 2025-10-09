@@ -4,17 +4,21 @@ from django.urls import path, include
 from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
 from apps.inventory import dashboard_views
 from . import views
 
 urlpatterns = [
+    # SOLO UNA RUTA PARA LA RAÍZ - ELIMINA LA DUPLICADA
+    path('', views.home_redirect, name='home'),
+    
     path('admin/', admin.site.urls),
     path('admin/dashboard/', dashboard_views.custom_dashboard, name='custom_dashboard'),
     
-     # Redirecciona la URL raíz a la URL del dashboard de inventario
-    path('', RedirectView.as_view(pattern_name='inventory:inventory_dashboard', permanent=False)),
-    # URLs de autenticación de usuario
-    path('accounts/', include('apps.users.urls')),
+    # URLs de autenticación de Django con templates personalizados
+    path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
+    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('accounts/', include('django.contrib.auth.urls')),
     
     # URLs de la API
     path('api/inventario/', include('apps.inventory.api_urls')),
@@ -32,8 +36,8 @@ urlpatterns = [
     path('accounts/', include('apps.users.urls')),
     path('notas-despacho/', include('apps.dispatch_notes.urls')),
     path('users/', include('apps.users.urls', namespace='users')),
+    
     # URLs de utilidades y error
-
     path('404/', views.page_not_found, name='404'),
     path('500/', views.server_error, name='500'),
 ]

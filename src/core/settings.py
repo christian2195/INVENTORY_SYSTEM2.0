@@ -116,9 +116,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-es'  # Cambiado a español
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/La_Paz'  # Cambiado a zona horaria de Bolivia
 
 USE_I18N = True
 
@@ -139,9 +139,24 @@ MEDIA_ROOT = '/app/media'
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 # Configuración para crispy-forms
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+# CONFIGURACIONES DE AUTENTICACIÓN - AGREGADAS
+LOGIN_REDIRECT_URL = '/inventario/dashboard/'  # Después del login, va al dashboard
+LOGOUT_REDIRECT_URL = '/accounts/login/'       # Después del logout, va al login
+LOGIN_URL = '/accounts/login/'                 # URL de login
+
+# Para redireccionar automáticamente después del login
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Configuración de sesiones (opcional pero recomendado)
+SESSION_COOKIE_AGE = 1209600  # 2 semanas en segundos
+SESSION_SAVE_EVERY_REQUEST = True
 
 JAZZMIN_SETTINGS = {
     "site_header": "Sistema de Inventario",
@@ -174,4 +189,19 @@ JAZZMIN_SETTINGS = {
         "dispatch_notes.dispatchnote": "fas fa-dolly-flatbed",
         "returns.returnnote": "fas fa-undo",
     },
+    
+    # Configuración de autenticación para Jazzmin
+    "login_logo": None,
+    "login_logo_dark": None,
+    "show_logo": True,
+}
+
+# Configuración de REST Framework (si lo usas)
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
 }
