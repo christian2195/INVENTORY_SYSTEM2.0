@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='order',
             name='created_at',
-            field=models.DateTimeField(auto_now_add=True, default=1, verbose_name='Creado en'),
+            field=models.DateTimeField(auto_now_add=True, default='2025-01-01T00:00:00.000000+00:00', verbose_name='Creado en'),
             preserve_default=False,
         ),
         migrations.AddField(
@@ -54,11 +54,11 @@ class Migration(migrations.Migration):
             name='notes',
             field=models.TextField(blank=True, verbose_name='Observaciones'),
         ),
-        migrations.AlterField(
+        migrations.AddField(
             model_name='order',
-            name='order_date',
-            field=models.DateTimeField(default=django.utils.timezone.now, verbose_name='Fecha de Orden'),
-        ),
+            name='creation_date',
+            field=models.DateTimeField(default='2025-01-01T00:00:00.000000+00:00'), # <-- ¡CORRECCIÓN CLAVE!
+),
         migrations.AlterField(
             model_name='order',
             name='order_number',
