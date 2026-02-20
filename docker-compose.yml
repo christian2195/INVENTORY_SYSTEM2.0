@@ -16,7 +16,9 @@ services:
       - "8000:8000"
     depends_on:
       - db
-  
+    networks:
+      - inventario_red
+
   db:
     image: postgres:13.22-alpine
     volumes:
@@ -25,6 +27,15 @@ services:
       POSTGRES_DB: inventory_db
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: securepassword 
+    networks:
+      - inventario_red
+
+networks:
+  inventario_red:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24  # <--- Esto evita el choque con tu IP 10.12.12.41
 
 volumes:
   postgres_data:
